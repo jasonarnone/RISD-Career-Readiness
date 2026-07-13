@@ -350,7 +350,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: rgba(255,255,255,0.5);
+    color: var(--year-color, rgba(255,255,255,0.5));
     margin-bottom: 10px;
     padding: 0 4px;
   }
@@ -1143,7 +1143,6 @@ async function signInUser(email, name, picture, profile = {}) {
 
   if (isAdmin) document.getElementById('nav-admin').style.display = 'flex';
 
-  switchTab('splash');
   await loadProgress(email);
 }
 
@@ -1190,6 +1189,9 @@ function showScreen(id) {
     if (overlay) { clearTimeout(window._splashFadeTimer); overlay.style.transition = 'none'; overlay.style.opacity = '0'; }
     const hint = document.getElementById('splash-hint');
     if (hint) { clearTimeout(window._splashHintTimer); hint.style.animation = 'none'; hint.style.opacity = '0'; }
+    // Cancel ring segment animations
+    (window._ringAnimTimers || []).forEach(t => clearTimeout(t));
+    window._ringAnimTimers = [];
   }
 }
 
@@ -1349,6 +1351,84 @@ function drawConcentricRings() {
       hint.style.animation = 'splashHintPulse 2s ease-in-out infinite';
     }, 5000);
   }
+
+  // Start ring segment animations after rings are drawn
+  animateSplashRings();
+}
+
+/* ════════════════════════════════════════════════
+   SPLASH RING SEGMENT ANIMATION
+   Sequentially pulses unchecked segment strokes
+   on each ring simultaneously at different rates.
+   ════════════════════════════════════════════════ */
+// Store active animation timers so we can cancel on navigation
+window._ringAnimTimers = window._ringAnimTimers || [];
+
+function animateSplashRings() {
+  // Cancel any existing animations
+  (window._ringAnimTimers || []).forEach(t => clearTimeout(t));
+  window._ringAnimTimers = [];
+
+  const svg = document.getElementById('splash-ring-svg');
+  if (!svg) return;
+
+  // Each ring's paths are in a <g> element, one per band
+  // Bands drawn in order: year 4, 3, 2, 1 (outermost first)
+  const groups = svg.querySelectorAll('g');
+  if (!groups.length) return;
+
+  // Map groups back to years (drawn order: 4,3,2,1)
+  const yearOrder = [4, 3, 2, 1];
+
+  // Different step intervals per ring for visual variety
+  const intervals = { 1: 180, 2: 240, 3: 310, 4: 140 };
+
+  groups.forEach((g, gi) => {
+    const year = yearOrder[gi];
+    const c = YEAR_COLORS[year];
+    const yearColor = c.bg;
+    const allItems = CHECKLIST[year].seasons.flatMap(s => s.items);
+    const paths = Array.from(g.querySelectorAll('path'));
+
+    // Only animate unchecked segments (transparent fill)
+    const unchecked = paths.filter(p => p.getAttribute('fill') === 'transparent');
+    if (!unchecked.length) return; // ring complete — skip
+
+    let idx = 0;
+    const stepInterval = intervals[year];
+
+    function animateNext() {
+      if (!document.getElementById('splash-screen').classList.contains('active')) return;
+
+      const path = unchecked[idx];
+      if (!path) return;
+
+      // Flash to 50% gray
+      path.style.transition = 'none';
+      path.setAttribute('stroke', 'rgba(128,128,128,0.8)');
+
+      // Fade back to year color
+      const t1 = setTimeout(() => {
+        path.style.transition = 'stroke 0.25s ease';
+        path.setAttribute('stroke', yearColor);
+        const t2 = setTimeout(() => {
+          path.style.transition = '';
+        }, 260);
+        window._ringAnimTimers.push(t2);
+      }, 80);
+
+      window._ringAnimTimers.push(t1);
+
+      idx = (idx + 1) % unchecked.length;
+      const t3 = setTimeout(animateNext, stepInterval);
+      window._ringAnimTimers.push(t3);
+    }
+
+    // Stagger ring starts slightly so they don't all begin together
+    const startDelay = gi * 60;
+    const t0 = setTimeout(animateNext, startDelay);
+    window._ringAnimTimers.push(t0);
+  });
 }
 
 function showAdminLogin() { openModal('admin-modal'); }
