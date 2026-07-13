@@ -1381,7 +1381,7 @@ function animateSplashRings() {
   const yearOrder = [4, 3, 2, 1];
 
   // Different step intervals per ring for visual variety
-  const intervals = { 1: 180, 2: 240, 3: 310, 4: 140 };
+  const intervals = { 1: 360, 2: 480, 3: 620, 4: 280 };
 
   groups.forEach((g, gi) => {
     const year = yearOrder[gi];
@@ -1405,17 +1405,17 @@ function animateSplashRings() {
 
       // Flash to 50% gray
       path.style.transition = 'none';
-      path.setAttribute('stroke', 'rgba(128,128,128,0.8)');
+      path.setAttribute('stroke', 'rgba(204,204,204,0.8)');
 
       // Fade back to year color
       const t1 = setTimeout(() => {
-        path.style.transition = 'stroke 0.25s ease';
+        path.style.transition = 'stroke 0.5s ease';
         path.setAttribute('stroke', yearColor);
         const t2 = setTimeout(() => {
           path.style.transition = '';
         }, 260);
         window._ringAnimTimers.push(t2);
-      }, 80);
+      }, 160);
 
       window._ringAnimTimers.push(t1);
 
