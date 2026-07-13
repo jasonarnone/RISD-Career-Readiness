@@ -1,0 +1,2208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>RISD Career Readiness</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@1,700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --risd-red: #C8102E;
+    --risd-red-light: #fdf0f2;
+    --risd-red-muted: #e8b0b8;
+    --bg: #f7f6f4;
+    --surface: #ffffff;
+    --border: #e2e0db;
+    --text: #1a1a1a;
+    --text-2: #555550;
+    --text-3: #888884;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── CONFIG BANNER ── */
+  #config-banner {
+    background: #1a1a1a;
+    color: #f0f0f0;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    border-bottom: 1px solid #333;
+  }
+  #config-banner strong { color: #fff; }
+  #config-banner code {
+    background: #333;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #7dd3fc;
+  }
+  #config-banner .steps { margin-top: 8px; padding-left: 16px; }
+  #config-banner .steps li { margin: 3px 0; }
+  #config-banner .dismiss {
+    margin-top: 10px;
+    background: #333;
+    border: none;
+    color: #ccc;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  #config-banner .dismiss:hover { background: #444; }
+
+  /* ── SCREENS ── */
+  html { overflow: hidden; height: 100%; }
+  .screen { display: none; padding: 0 0 80px; }
+  .screen.active {
+    display: block;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    background: var(--bg);
+    z-index: 1;
+  }
+  #splash-screen.active { background: #111; }
+  #student-screen.active { background: #111; }
+
+  /* ── HEADER ── */
+  .app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo-mark {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-mark span {
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .header-text h1 { font-size: 15px; font-weight: 600; line-height: 1.2; }
+  .header-text p { font-size: 12px; color: var(--text-3); }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--risd-red-light);
+    border: 1px solid var(--risd-red-muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--risd-red);
+    cursor: pointer;
+  }
+
+  /* ── SIGN IN ── */
+  #signin-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    padding: 40px 24px;
+    background: #111;
+  }
+  .signin-card {
+    background: transparent;
+    border: none;
+    padding: 32px 28px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+  }
+  .signin-logo {
+    width: 56px; height: 56px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+  }
+  .signin-logo span { color: white; font-size: 22px; font-weight: 700; }
+  .signin-card h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; color: white; }
+  .signin-card p { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 28px; line-height: 1.5; }
+  #google-signin-btn { width: 100%; justify-content: center; }
+  .signin-note {
+    margin-top: 16px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+  .admin-link {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+  }
+  .admin-link a {
+    color: #fd9a1a;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* ── PROGRESS RING ── */
+  .progress-overview {
+    background: #fd9a1a;
+    padding: 20px 20px 24px;
+    color: #1a1a1a;
+    transition: background 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .progress-overview .greeting {
+    font-size: 13px;
+    opacity: 0.8;
+    margin-bottom: 2px;
+    align-self: flex-start;
+  }
+  .progress-ring-wrap {
+    position: relative;
+    width: 200px; height: 200px;
+    margin: 12px 0 16px;
+    flex-shrink: 0;
+  }
+  .progress-ring-wrap svg {
+    width: 100%; height: 100%;
+    transform: rotate(-90deg);
+  }
+  .ring-center-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: none;
+    padding: 16px;
+    gap: 1px;
+  }
+  .ring-count {
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1;
+    color: white;
+  }
+  .ring-total {
+    font-size: 13px;
+    opacity: 0.75;
+    margin-top: 4px;
+  }
+  .ring-complete-label {
+    font-size: 18px;
+    font-weight: 700;
+    color: #FFE033;
+    line-height: 1.3;
+    display: none;
+  }
+  .ring-complete-label.visible { display: block; }
+  .ring-count.hidden, .ring-total.hidden { display: none; }
+  .year-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .year-tab {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .year-tab.active {
+    font-weight: 600;
+  }
+
+  /* ── SPLASH SCREEN ── */
+  #splash-screen {
+    background: #111;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 80px;
+  }
+  .splash-header {
+    width: 100%;
+    padding: 20px 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .splash-header .logo-mark { flex-shrink: 0; }
+  .splash-student-name {
+    font-size: 17px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.2;
+  }
+  .splash-student-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+  }
+  .splash-avatar {
+    margin-left: auto;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .splash-ring-wrap {
+    width: 100%;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 12px 0;
+    position: relative;
+  }
+  .splash-title-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-13deg);
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-style: italic;
+    font-size: clamp(28px, 8.75vw, 42px);
+    line-height: 1.25;
+    color: white;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: 0;
+    z-index: 2;
+  }
+  .splash-ring-wrap svg {
+    width: 100%;
+    max-width: 380px;
+    height: auto;
+  }
+  .splash-year-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 16px 16px 0;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .splash-year-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 2.5px solid;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: Georgia, serif;
+    cursor: pointer;
+    text-align: center;
+    line-height: 1.3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .splash-year-btn:hover { opacity: 0.85; }
+  .splash-year-btn:active { transform: scale(0.97); }
+  .checklist-body { padding: 16px 16px 0; background: #111; min-height: 100%; }
+  .season-section { margin-bottom: 20px; }
+  .season-label {
+    font-family: 'Roboto', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+  .checklist-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: border-color 0.15s;
+  }
+  .checklist-item.done { background: var(--year-color, #22c55e); border-color: transparent; }
+  .expand-btn {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    margin-top: -3px;
+    margin-right: -4px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-3);
+    transition: background 0.12s, color 0.12s, transform 0.2s;
+    border: none;
+    background: none;
+  }
+  .expand-btn:hover { background: var(--bg); color: var(--text); }
+  .checklist-item.expanded .expand-btn { transform: rotate(90deg); color: var(--risd-red); }
+  .checklist-item.done .expand-btn { color: rgba(255,255,255,0.5); }
+  .checklist-item.done.expanded .expand-btn { color: white; }
+  .check-circle {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    background: white;
+  }
+  .checklist-item.done .check-circle {
+    background: rgba(0,0,0,0.25);
+    border-color: rgba(255,255,255,0.4);
+  }
+  .check-circle svg { display: none; }
+  .checklist-item.done .check-circle svg { display: block; }
+  .item-text {
+    flex: 1;
+  }
+  .item-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--text);
+  }
+  .checklist-item.done .item-title {
+    color: white;
+    text-decoration: line-through;
+    text-decoration-color: rgba(255,255,255,0.5);
+  }
+  .item-desc {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 4px;
+    line-height: 1.5;
+    display: none;
+  }
+  .checklist-item.expanded .item-desc { display: block; }
+  .item-meta {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 6px;
+  }
+  .admin-badge {
+    display: inline-block;
+    background: #fef9ec;
+    border: 1px solid #f5d76e;
+    color: #8a6000;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  /* ── ADMIN ── */
+  .admin-bar {
+    background: #1a1a1a;
+    color: #f0f0f0;
+    padding: 10px 16px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .admin-dot {
+    width: 8px; height: 8px;
+    background: #4ade80;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .admin-search {
+    padding: 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-search label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .search-row {
+    display: flex;
+    gap: 8px;
+  }
+  .search-row input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+  }
+  .search-row input:focus { border-color: var(--risd-red-muted); }
+  .btn {
+    padding: 9px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary {
+    background: var(--risd-red);
+    color: white;
+    border-color: var(--risd-red);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-2);
+    border-color: var(--border);
+  }
+  .admin-student-info {
+    padding: 14px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .student-email { font-size: 14px; font-weight: 500; }
+  .student-prog { font-size: 12px; color: var(--text-3); }
+
+  /* ── LOADING / ERRORS ── */
+  .state-msg {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-3);
+    font-size: 14px;
+  }
+  .state-msg .icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.4;
+  }
+
+
+
+  /* ── MODAL ── */
+  .modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 100;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .modal p { font-size: 14px; color: var(--text-2); line-height: 1.6; margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 8px; flex-direction: column; }
+  .modal-actions .btn { width: 100%; text-align: center; padding: 12px; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1a1a1a;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 200;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── SETUP SCREEN ── */
+  .setup-screen {
+    padding: 24px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .setup-screen h2 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .setup-screen p { font-size: 14px; color: var(--text-2); margin-bottom: 20px; }
+  .setup-field { margin-bottom: 16px; }
+  .setup-field label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-3);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .setup-field input, .setup-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    font-family: monospace;
+  }
+  .setup-field input:focus, .setup-field textarea:focus { border-color: var(--risd-red-muted); }
+  .setup-field textarea { resize: vertical; min-height: 80px; font-size: 12px; }
+
+  @keyframes ringRotate {
+    from { transform: rotate(-90deg); }
+    to   { transform: rotate(270deg); }
+  }
+  @keyframes splashHintPulse {
+    0%, 100% { opacity: 0.25; }
+    50%       { opacity: 0.65; }
+  }
+    body { max-width: 480px; margin: 0 auto; }
+    #toast { bottom: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIGN IN SCREEN -->
+<div id="signin-screen" class="screen active">
+  <div id="config-banner" style="background:#1a1a1a;color:#f0f0f0;padding:10px 14px;font-size:12px;line-height:1.5;text-align:center">
+    <strong style="color:#fff">🟡 Demo mode</strong> — enter any email to preview.
+    <button onclick="dismissBanner()" style="margin-left:8px;background:#333;border:none;color:#ccc;padding:3px 10px;border-radius:5px;cursor:pointer;font-size:11px">Hide</button>
+  </div>
+  <div class="signin-card">
+    <div class="signin-logo"><svg width="56" height="56" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs><style>
+    .i56-1{fill:#fd9a1a;stroke:#fd9a1a}
+    .i56-1,.i56-2,.i56-3,.i56-4,.i56-5{stroke-miterlimit:10}
+    .i56-1,.i56-2,.i56-3,.i56-5{stroke-width:70px}
+    .i56-2{stroke:#5ceaff}.i56-2,.i56-3,.i56-5{fill:none}
+    .i56-3{stroke:#bdf452}.i56-4{stroke:none;fill:none}
+    .i56-5{stroke:#f1369f}
+  </style></defs>
+  <rect class="i56-4" width="1080" height="1080"/>
+  <circle class="i56-1" cx="540" cy="540" r="147.06"/>
+  <circle class="i56-2" cx="540" cy="540" r="264.71"/>
+  <circle class="i56-5" cx="540" cy="540" r="382.35"/>
+  <circle class="i56-3" cx="540" cy="540" r="500"/>
+</svg></div>
+    <h2>Career Readiness</h2>
+    <p style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.65;margin-bottom:20px;text-align:left">In order to help you navigate your academic journey through RISD with career readiness on your mind, we have created these detailed checklists for each academic grade level. Use these checklists to stay on track with critical career tasks as you move through school.</p>
+    <div style="background:#fef9ec;border:1px solid #f5d76e;border-radius:8px;padding:10px 12px;margin-bottom:16px;text-align:left;font-size:12px;color:#7a5800;line-height:1.5;">
+      <strong>Demo mode</strong> — enter any email to preview the app. Progress saves in your browser for this session only.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      <input id="demo-email-input" type="email" placeholder="you@risd.edu"
+        style="width:100%;padding:10px 14px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:15px;color:white;background:rgba(255,255,255,0.1);outline:none;font-family:Georgia,serif;"
+        onkeydown="if(event.key==='Enter')demoSignIn()" />
+      <button onclick="demoSignIn()"
+        style="width:100%;padding:11px;background:#fd9a1a;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:Georgia,serif;">
+        View my checklist
+      </button>
+    </div>
+    <p class="signin-note">Only your email is stored to track your progress.</p>
+    <div class="admin-link">
+      Career Center staff? <a onclick="showAdminLogin()">Admin sign in →</a>
+    </div>
+  </div>
+</div>
+
+<!-- SPLASH SCREEN -->
+<div id="splash-screen" class="screen">
+  <div class="splash-header">
+    <div class="logo-mark"><svg width="32" height="32" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs><style>
+    .i32-1{fill:#fd9a1a;stroke:#fd9a1a}
+    .i32-1,.i32-2,.i32-3,.i32-4,.i32-5{stroke-miterlimit:10}
+    .i32-1,.i32-2,.i32-3,.i32-5{stroke-width:70px}
+    .i32-2{stroke:#5ceaff}.i32-2,.i32-3,.i32-5{fill:none}
+    .i32-3{stroke:#bdf452}.i32-4{stroke:none;fill:none}
+    .i32-5{stroke:#f1369f}
+  </style></defs>
+  <rect class="i32-4" width="1080" height="1080"/>
+  <circle class="i32-1" cx="540" cy="540" r="147.06"/>
+  <circle class="i32-2" cx="540" cy="540" r="264.71"/>
+  <circle class="i32-5" cx="540" cy="540" r="382.35"/>
+  <circle class="i32-3" cx="540" cy="540" r="500"/>
+</svg></div>
+    <div>
+      <div class="splash-student-name" id="splash-name">Career Readiness</div>
+      <div class="splash-student-sub" id="splash-sub">RISD Career Center</div>
+    </div>
+    <div class="splash-avatar" id="splash-avatar" onclick="showSignoutModal()">?</div>
+  </div>
+  <div class="splash-ring-wrap">
+    <svg id="splash-ring-svg" viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="splash-title-overlay" class="splash-title-overlay">
+      RISD CAREER<br>READINESS<br>PROGRESS
+    </div>
+  </div>
+  <div class="splash-year-tabs" id="splash-year-tabs"></div>
+  <div id="splash-hint" style="opacity:0;transition:none;font-family:Georgia,serif;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;padding:14px 24px 0;pointer-events:none">(Click a circle button to see career tasks)</div>
+</div>
+
+<!-- MAIN STUDENT APP -->
+<div id="student-screen" class="screen">
+  <div class="splash-header" style="position:sticky;top:0;z-index:10;background:#111;border-bottom:1px solid rgba(255,255,255,0.08)">
+    <button onclick="switchTab('splash')" style="background:none;border:none;padding:4px;cursor:pointer;color:rgba(255,255,255,0.5);display:flex;align-items:center;flex-shrink:0" aria-label="Back to overview">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 15l-5-5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="logo-mark"><svg width="32" height="32" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs><style>
+    .i32-1{fill:#fd9a1a;stroke:#fd9a1a}
+    .i32-1,.i32-2,.i32-3,.i32-4,.i32-5{stroke-miterlimit:10}
+    .i32-1,.i32-2,.i32-3,.i32-5{stroke-width:70px}
+    .i32-2{stroke:#5ceaff}.i32-2,.i32-3,.i32-5{fill:none}
+    .i32-3{stroke:#bdf452}.i32-4{stroke:none;fill:none}
+    .i32-5{stroke:#f1369f}
+  </style></defs>
+  <rect class="i32-4" width="1080" height="1080"/>
+  <circle class="i32-1" cx="540" cy="540" r="147.06"/>
+  <circle class="i32-2" cx="540" cy="540" r="264.71"/>
+  <circle class="i32-5" cx="540" cy="540" r="382.35"/>
+  <circle class="i32-3" cx="540" cy="540" r="500"/>
+</svg></div>
+    <div>
+      <div class="splash-student-name" id="student-greeting" style="font-size:15px">Welcome</div>
+      <div class="splash-student-sub" id="student-year-label">RISD Career Center</div>
+    </div>
+    <div class="splash-avatar" id="user-avatar" onclick="showSignoutModal()">?</div>
+  </div>
+
+  <div class="progress-overview">
+    <div class="progress-ring-wrap">
+      <svg id="progress-ring-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="ring-center-text">
+        <div class="ring-count" id="ring-count">0</div>
+        <div class="ring-total" id="ring-total" style="display:none"></div>
+        <div class="ring-complete-label" id="ring-complete-label"></div>
+      </div>
+    </div>
+    <div id="ring-year-label" style="font-size:24px;font-weight:600;color:rgba(255,255,255,0.75);text-align:center;margin-top:8px"></div>
+  </div>
+
+  <div class="checklist-body" id="checklist-body">
+    <div class="state-msg">
+      <div class="icon">⏳</div>
+      Loading your checklist…
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN SCREEN -->
+<div id="admin-screen" class="screen">
+  <div class="app-header">
+    <div class="logo-mark"><svg width="32" height="32" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs><style>
+    .i32-1{fill:#fd9a1a;stroke:#fd9a1a}
+    .i32-1,.i32-2,.i32-3,.i32-4,.i32-5{stroke-miterlimit:10}
+    .i32-1,.i32-2,.i32-3,.i32-5{stroke-width:70px}
+    .i32-2{stroke:#5ceaff}.i32-2,.i32-3,.i32-5{fill:none}
+    .i32-3{stroke:#bdf452}.i32-4{stroke:none;fill:none}
+    .i32-5{stroke:#f1369f}
+  </style></defs>
+  <rect class="i32-4" width="1080" height="1080"/>
+  <circle class="i32-1" cx="540" cy="540" r="147.06"/>
+  <circle class="i32-2" cx="540" cy="540" r="264.71"/>
+  <circle class="i32-5" cx="540" cy="540" r="382.35"/>
+  <circle class="i32-3" cx="540" cy="540" r="500"/>
+</svg></div>
+    <div class="header-text">
+      <h1>Admin Panel</h1>
+      <p>Career Center</p>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+  <div class="admin-bar">
+    <div class="admin-dot"></div>
+    Admin mode
+  </div>
+
+  <!-- TABS -->
+  <div style="display:flex;border-bottom:1px solid var(--border);background:var(--surface)">
+    <button class="admin-tab active" id="tab-student" onclick="switchAdminTab('student')"
+      style="flex:1;padding:11px;font-size:13px;font-family:Georgia,serif;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--risd-red);color:var(--text);font-weight:600">
+      Student lookup
+    </button>
+    <button class="admin-tab" id="tab-roster" onclick="switchAdminTab('roster')"
+      style="flex:1;padding:11px;font-size:13px;font-family:Georgia,serif;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-3)">
+      Import roster
+    </button>
+  </div>
+
+  <!-- STUDENT LOOKUP PANEL -->
+  <div id="admin-panel-student">
+    <div class="admin-search">
+      <label>Look up a student</label>
+      <div class="search-row">
+        <input type="email" id="student-email-input" placeholder="student@risd.edu" />
+        <button class="btn btn-primary" onclick="loadStudentAdmin()">Load</button>
+      </div>
+    </div>
+    <div id="admin-student-area"></div>
+  </div>
+
+  <!-- ROSTER IMPORT PANEL -->
+  <div id="admin-panel-roster" style="display:none">
+    <div style="padding:16px;background:var(--surface);border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);margin-bottom:8px">Upload CSV roster</div>
+      <div style="font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:12px">
+        Upload a CSV file with columns: <strong>Email, First Name, Last Name, Student Group, Grad Year, Major</strong>. Column order doesn't matter. Existing task progress is never affected.
+      </div>
+      <label id="csv-upload-label" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:20px;border:1.5px dashed var(--border);border-radius:var(--radius);cursor:pointer;background:var(--bg);color:var(--text-2);font-size:14px;transition:border-color .15s">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        Choose CSV file
+        <input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none" onchange="handleCSVUpload(this)"/>
+      </label>
+      <div id="csv-filename" style="font-size:12px;color:var(--text-3);margin-top:6px;text-align:center"></div>
+    </div>
+
+    <!-- PREVIEW TABLE -->
+    <div id="csv-preview-area" style="display:none">
+      <div style="padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:13px;font-weight:600" id="csv-preview-title">Preview</div>
+          <div style="font-size:12px;color:var(--text-3)" id="csv-preview-subtitle"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="clearCSV()">Cancel</button>
+          <button class="btn btn-primary" id="csv-import-btn" style="font-size:12px;padding:6px 12px" onclick="commitImport()">Import all</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="csv-preview-table" style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead id="csv-preview-head" style="background:var(--bg)"></thead>
+          <tbody id="csv-preview-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- IMPORT RESULT -->
+    <div id="csv-result-area" style="display:none;padding:24px 16px;text-align:center">
+      <div id="csv-result-icon" style="font-size:36px;margin-bottom:8px"></div>
+      <div id="csv-result-msg" style="font-size:15px;font-weight:600;margin-bottom:4px"></div>
+      <div id="csv-result-detail" style="font-size:13px;color:var(--text-3);margin-bottom:16px"></div>
+      <button class="btn btn-ghost" onclick="clearCSV()">Import another file</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- SIGNOUT MODAL -->
+<div class="modal-bg" id="signout-modal">
+  <div class="modal">
+    <h3>Account</h3>
+    <p id="signout-email-display">Signed in as …</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="signOut()">Sign out</button>
+      <button class="btn btn-primary" onclick="closeModal('signout-modal')">Stay signed in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal-bg" id="admin-modal">
+  <div class="modal">
+    <h3>Admin sign in</h3>
+    <p>Enter your email to access the admin panel. In demo mode, any email matching the admin list gets admin access.</p>
+    <div class="modal-actions">
+      <input id="demo-admin-email" type="email" placeholder="admin@risd.edu"
+        style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:15px;color:var(--text);background:var(--bg);outline:none;margin-bottom:8px;"
+        onkeydown="if(event.key==='Enter')demoAdminSignIn()" />
+      <button onclick="demoAdminSignIn()" class="btn btn-primary" style="width:100%;padding:12px;">Sign in as admin</button>
+      <button class="btn btn-ghost" style="margin-top:8px;width:100%;padding:12px;" onclick="closeModal('admin-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════
+   CONFIG — Edit these values before deploying
+   ════════════════════════════════════════════════ */
+const CONFIG = {
+  GOOGLE_CLIENT_ID: "755047865514-ioidhl5ngr4ugr63oh93dh04ub29jgqv.apps.googleusercontent.com",
+  APPS_SCRIPT_URL:  "https://script.google.com/macros/s/AKfycbweTOv03qTUT7ul_MYCPMMFMu-qo88e2d7jBOwP5390xMHvk7xabzFxN2yb8odUm9bRUQ/exec",
+  ALLOWED_DOMAIN: "risd.edu",
+  DEMO_MODE: true, // ← set to false when going live with Google Sign-In
+  ADMIN_EMAILS: [
+    "risdcareers@risd.edu"
+  ]
+};
+
+/* ════════════════════════════════════════════════
+   CHECKLIST DATA
+   ════════════════════════════════════════════════ */
+const YEAR_COLORS = {
+  1: { bg: '#fd9a1a', text: '#1a1a1a', tabActive: '#1a1a1a' },
+  2: { bg: '#5deaff', text: '#1a1a1a', tabActive: '#1a1a1a' },
+  3: { bg: '#f1369f', text: '#1a1a1a', tabActive: '#1a1a1a' },
+  4: { bg: '#bdf452', text: '#1a1a1a', tabActive: '#1a1a1a' },
+};
+
+const CHECKLIST = {
+  1: {
+    label: "1st Year",
+    subtitle: "Explore",
+    seasons: [
+      { name: "Fall", items: [
+        { id:"1-f-1", title:"Access your ArtWorks account", desc:"Log into ArtWorks, RISD's platform for jobs, internships, freelance, and artist opportunities. Use it to schedule Career Center appointments and stay updated on events." },
+        { id:"1-f-2", title:"Get to know Career Center resources", desc:"Familiarize yourself with the Career Center website — internships, jobs, career preparation, artist resources, residencies, grants, business, and entrepreneurship information." },
+        { id:"1-f-3", title:"Attend a fall Career Center program", desc:"Attend at least one career program this semester. Most are one hour long and packed with helpful career development information." },
+        { id:"1-f-4", title:"Explore potential majors", desc:"Attend department open houses, speak with your Academic Advisor, talk with peers, and reflect on which classes have interested you most. You'll declare your major in spring." },
+        { id:"1-f-5", title:"Follow the Career Center on social media", desc:"Stay updated on career events, job and internship opportunities, and tips by following on Instagram & Facebook." },
+      ]},
+      { name: "Winter", items: [
+        { id:"1-w-1", title:"Visit the Career Center", desc:"Make an appointment for career advising and to learn about services, resources, programs, and events. Just meet with us — no agenda needed!" },
+        { id:"1-w-2", title:"Build your community", desc:"Connect with other students to learn about various majors, reach out to RISD alumni through LinkedIn, and explore Involved@RISD to join clubs and workshops." },
+        { id:"1-w-3", title:"Attend Wintersession Career Center programs", desc:"Take part in workshops like the Resume Critique Workshop and the Career Resources for First Year Students Program." },
+        { id:"1-w-4", title:"Explore opportunities to expand your interests", desc:"Use Wintersession to explore your interests, learn new techniques, develop digital tools, or try something different to grow creatively and professionally." },
+      ]},
+      { name: "Spring", items: [
+        { id:"1-s-1", title:"Connect with peers, faculty, and advisors", desc:"Continue engaging with classmates, instructors, and academic advisors to build relationships, get feedback, and find collaborative opportunities." },
+        { id:"1-s-2", title:"Gather work for your portfolio", desc:"Begin compiling images of your best projects. Focus on strong digital images that can benefit future applications for internships, jobs, freelance, grants, and residencies." },
+        { id:"1-s-3", title:"Get comfortable with digital tools", desc:"Learn basic digital image editing techniques using RISD's LinkedIn Learning to support or expand your practice." },
+        { id:"1-s-4", title:"Attend spring Career Center programs", desc:"Spring offers valuable career programs that can prepare you for summer opportunities." },
+      ]},
+      { name: "Summer", items: [
+        { id:"1-su-1", title:"Explore summer learning opportunities", desc:"Look for open studios, artist talks, online tutorials, and community events. Try job shadowing, collaborate on personal projects, or volunteer with local arts organizations." },
+        { id:"1-su-2", title:"Start sharing your work", desc:"Document your first-year work and start sharing your portfolio through platforms like Instagram, Behance, or a personal website." },
+        { id:"1-su-3", title:"Create a LinkedIn profile & begin networking", desc:"Establish a professional online presence and connect with classmates, alumni, and industry professionals. Ask about their career paths and creative interests." },
+        { id:"1-su-4", title:"Reflect and set goals for second year", desc:"Pause to reflect on what you've made and learned. Set a few goals — like trying a new medium or exploring a career path — to move into next year with intention." },
+      ]}
+    ]
+  },
+  2: {
+    label: "2nd Year",
+    subtitle: "Create",
+    seasons: [
+      { name: "Fall", items: [
+        { id:"2-f-1", title:"Develop skills & critical thinking in your major", desc:"Dive into the tools, techniques, and critical thinking of your major. Get comfortable in your discipline and try new things." },
+        { id:"2-f-2", title:"Access and update your ArtWorks account", desc:"Log in and update your profile to stay connected to job postings, internships, career events, and workshops." },
+        { id:"2-f-3", title:"Make a Career Advising appointment", desc:"Schedule a one-on-one advising appointment — even just to explore your options. No agenda needed." },
+        { id:"2-f-4", title:"Start a portfolio", desc:"Begin compiling your best work in a PDF portfolio, personal website, or Behance page. Look at alumni and professional portfolios for guidance." },
+        { id:"2-f-5", title:"Attend Career Center programs & events (at least 2)", desc:"Look for workshops, panels, and networking events. Internship Connect takes place every fall — a terrific event for making professional connections." },
+        { id:"2-f-6", title:"Build business knowledge through Art of Business series", desc:"Learn about contracts, marketing, pricing, taxes, business entities, and freelancing from alumni who've started businesses." },
+      ]},
+      { name: "Winter", items: [
+        { id:"2-w-1", title:"Consider taking an internship or course", desc:"Gain hands-on experience through a short-term internship or course related to your field. If not, use this time to search for summer opportunities and build career materials." },
+        { id:"2-w-2", title:"Create or refine your LinkedIn profile", desc:"Establish a professional online presence and connect with alumni, classmates, and industry professionals." },
+        { id:"2-w-3", title:"Refine your networking skills", desc:"Connect with peers, attend events, and try reaching out to 3–5 alumni in your field on LinkedIn. Ask about their career paths and creative interests." },
+        { id:"2-w-4", title:"Start preparing for summer opportunities", desc:"Research and apply during Wintersession — some deadlines are early. Polish your resume and portfolio and apply early through ArtWorks." },
+        { id:"2-w-5", title:"Research managed grants & internship support", desc:"Explore RISD Managed Grants and internship support opportunities. Many are available to sophomores with winter and spring deadlines." },
+        { id:"2-w-6", title:"Practice interviewing", desc:"Consider a mock interview with the Career Center. Practice describing your creative process and explaining the choices behind key portfolio pieces." },
+      ]},
+      { name: "Spring", items: [
+        { id:"2-s-1", title:"Apply for summer internships & artist opportunities", desc:"Put your research into action. Prepare a strong application package with tailored resume, cover letters, and portfolio. International students: meet with ISSA about CPT requirements." },
+        { id:"2-s-2", title:"Continue to develop your portfolio", desc:"Add new work from classes and personal projects. Consider setting up a personal website and think about the story you want to tell about your work." },
+        { id:"2-s-3", title:"Seek feedback on your art & design work", desc:"Take advantage of critique opportunities with faculty, classmates, or industry professionals to see your work from new perspectives." },
+        { id:"2-s-4", title:"Consider student employment & campus resume-building", desc:"Translate your campus job tasks into resume language that connects to creative industry skills. Career Advisors can help." },
+        { id:"2-s-5", title:"Engage in student organizations & department activities", desc:"Participate in clubs, student organizations, or department events through Involved@RISD to build leadership skills and connections." },
+        { id:"2-s-6", title:"Visit the Career Center for advising & resources", desc:"Make an advising appointment to support you through the opportunities you're seeking and to explore your interests and career goals." },
+      ]},
+      { name: "Summer", items: [
+        { id:"2-su-1", title:"Pursue an internship, artist opportunity, or summer job", desc:"Gain practical experience through an internship, artist opportunity, or self-directed project. Document your work and accomplishments throughout." },
+        { id:"2-su-2", title:"Expand your online portfolio", desc:"Update your portfolio or website with new work including process shots and documentation of completed projects." },
+        { id:"2-su-3", title:"Reflect and set goals for third year", desc:"Look back on your experiences. What's been most rewarding? Set goals — like refining your portfolio — to enter third year with clarity and momentum." },
+        { id:"2-su-4", title:"Get comfortable with digital tools (Adobe, etc.)", desc:"Learn or deepen digital tools like the Adobe Creative Suite using RISD's LinkedIn Learning." },
+      ]}
+    ]
+  },
+  3: {
+    label: "3rd Year",
+    subtitle: "Build",
+    seasons: [
+      { name: "Fall", items: [
+        { id:"3-f-1", title:"Set career and skill goals", desc:"Think about what you want to do after graduation. Set goals around learning new skills, expanding knowledge of a field, or building experience in areas that engage you." },
+        { id:"3-f-2", title:"Refine your portfolio and website", desc:"Organize your strongest, most recent work into a clean, professional portfolio. Think about the story you want to tell about your work." },
+        { id:"3-f-3", title:"Develop a list of potential companies & organizations", desc:"Research companies, studios, artists, or organizations where you'd like to intern or work. Use ArtWorks, LinkedIn, the Alumni Directory, and the Employer Directory." },
+        { id:"3-f-4", title:"Attend Career Center programs & events (at least 2–3)", desc:"Build your career knowledge at workshops, panels, and networking events. Internship Connect in fall is especially valuable." },
+        { id:"3-f-5", title:"Take part in the Art of Business series", desc:"Gain knowledge from guest speakers on finances, legal issues, pricing, marketing, and building your freelancing or business." },
+        { id:"3-f-6", title:"Consider doing an internship", desc:"Junior year is the most popular time for an internship. Begin your search now for Wintersession or summer. International students: meet with ISSA about CPT requirements." },
+        { id:"3-f-7", title:"Connect with alumni and professionals", desc:"Build connections with alumni via LinkedIn and the RISD Alumni Directory. Introduce yourself as a RISD artist/designer interested in their career paths." },
+        { id:"3-f-8", title:"Make a Career Advising appointment", desc:"Meet with a career advisor to discuss career goals, get help with resume and cover letters, portfolio feedback, internship tips, and grant advice." },
+      ]},
+      { name: "Winter", items: [
+        { id:"3-w-1", title:"Engage in an internship or course", desc:"Participate in a Wintersession internship or begin your search for a summer internship. Or experience a course within or outside your field." },
+        { id:"3-w-2", title:"Polish your resume and cover letter", desc:"Work with the Career Center to create a standout resume and cover letter. Translate campus job experience into creative industry language." },
+        { id:"3-w-3", title:"Create or refine your LinkedIn profile", desc:"Update your profile and use it to connect with alumni, classmates, and industry professionals." },
+        { id:"3-w-4", title:"Refine your networking skills", desc:"Take part in our 'Networking & Building Professional Relationships' program. Reach out to 3–5 alumni in your field on LinkedIn." },
+        { id:"3-w-5", title:"Practice interviewing", desc:"Schedule a mock interview with the Career Center. Practice describing your creative process and the choices behind key portfolio pieces." },
+        { id:"3-w-6", title:"Learn new digital skills or software", desc:"Master new software or digital tools in high demand in your industry using RISD's LinkedIn Learning." },
+        { id:"3-w-7", title:"Use CreativeStudy tutorials for business & finance", desc:"Gain key personal business and finance knowledge vital to your creative practice." },
+        { id:"3-w-8", title:"Start preparing for summer opportunities", desc:"Research and apply for internships, assistantships, summer jobs, residencies, and grants through ArtWorks. Apply early — some deadlines come up fast." },
+        { id:"3-w-9", title:"Research managed grants & internship support", desc:"Explore RISD Managed Grants — many are specifically available to juniors, and this may be one of your last years to take advantage of them." },
+      ]},
+      { name: "Spring", items: [
+        { id:"3-s-1", title:"Apply for summer opportunities", desc:"Send out applications for internships and artist opportunities. Customize each application — tailored resume, cover letters, and portfolio." },
+        { id:"3-s-2", title:"Refine your portfolio", desc:"Review your portfolio with a Career Center advisor and update it with recent work or special projects from Wintersession." },
+        { id:"3-s-3", title:"Attend the Design or Fine Arts Portfolio Reviews", desc:"Gain professional feedback on your portfolio as you prepare for internships, jobs, and freelance work." },
+        { id:"3-s-4", title:"Plan for graduate schools (if applicable)", desc:"Research programs, prepare application materials, work on your statement of purpose, gather recommendations, and refine your portfolio." },
+        { id:"3-s-5", title:"Engage in student organizations & department activities", desc:"Participate in clubs and events through Involved@RISD to build leadership skills and connections." },
+        { id:"3-s-6", title:"Visit the Career Center for advising & resources", desc:"Make an advising appointment to support you through the opportunities you're seeking." },
+      ]},
+      { name: "Summer", items: [
+        { id:"3-su-1", title:"Build experience through summer opportunities", desc:"Complete an internship, assist an artist, participate in a residency, work on a studio or gallery project, or pursue a personal project. Document your work." },
+        { id:"3-su-2", title:"Update your professional materials", desc:"Add new work, experiences, and skills to your resume, portfolio, and LinkedIn profile so you're always ready to show your work." },
+        { id:"3-su-3", title:"Refine your networking skills", desc:"Reach out to 3–5 alumni in your field on LinkedIn. Ask about their career paths, day-to-day work, and potential opportunities." },
+        { id:"3-su-4", title:"Reflect on career goals for fourth year", desc:"Which projects, ideas, or skills have shaped you most? Set clear intentions for your final year — and look into Professional Practices classes available in your department." },
+        { id:"3-su-5", title:"Explore post-graduation opportunities", desc:"Start looking into companies, galleries, studios, residencies, and arts organizations that align with your interests to shape your portfolio and goals for after RISD." },
+      ]}
+    ]
+  },
+  4: {
+    label: "4th Year",
+    subtitle: "Launch",
+    seasons: [
+      { name: "Fall", items: [
+        { id:"4-f-1", title:"Clarify your goals", desc:"Identify what you want to accomplish in your final year — securing a job, building a body of work, applying to grants and residencies, or laying groundwork for freelance. Break into defined steps." },
+        { id:"4-f-2", title:"Search for opportunities in ArtWorks", desc:"Use ArtWorks regularly for jobs, internships, freelance, and artist opportunities. Set up email alerts and explore the Employer Directory." },
+        { id:"4-f-3", title:"Research grant & residency opportunities", desc:"Many applications have deadlines starting in winter and spring. Research them now to prepare in time. Find listings at the Residency and Grant pages on the Careers site." },
+        { id:"4-f-4", title:"Refine your portfolio and website", desc:"Curate your strongest work including thesis or capstone projects. Update your artist statement and make sure your portfolio is professional and easy to navigate." },
+        { id:"4-f-5", title:"Meet with a Career Center advisor", desc:"Schedule check-ins to fine-tune your portfolio, website, and career materials. Get targeted feedback on applications and discuss post-graduation opportunities." },
+        { id:"4-f-6", title:"Consider Professional Practice classes", desc:"Seek out Professional Practices classes available in your department for excellent preparation for your field and life after RISD." },
+        { id:"4-f-7", title:"Expand your network", desc:"Attend visiting artist/designer talks, Career Center events, and RISD networking gatherings. Reach out to alumni for insight into their career paths." },
+        { id:"4-f-8", title:"Attend Career Center programs & events", desc:"Take advantage of workshops, panels, and networking events connected to your creative field." },
+        { id:"4-f-9", title:"Take part in the Art of Business series", desc:"Gain knowledge on finances, legal issues, pricing, marketing, and building your freelancing or business from Art of Business guest speakers." },
+        { id:"4-f-10", title:"Consider doing a Wintersession internship", desc:"Search for and register a Wintersession internship now in ArtWorks. International students: meet with ISSA about CPT requirements." },
+        { id:"4-f-11", title:"Apply for graduate schools (if applicable)", desc:"Start finalizing your materials, confirming recommendation letters, and meeting all deadlines." },
+      ]},
+      { name: "Winter", items: [
+        { id:"4-w-1", title:"Engage in an internship or course", desc:"Participate in a Wintersession internship or course within or outside your field for portfolio-worthy work and network expansion." },
+        { id:"4-w-2", title:"Continue to build your portfolio or website", desc:"Catch up on portfolio work — add new projects, personal work, or collaborations that highlight your growth." },
+        { id:"4-w-3", title:"Prepare for interviews", desc:"Practice with a Career Center mock interview. Rehearse talking about your work — influences, materials, and process — so you can communicate confidently." },
+        { id:"4-w-4", title:"Refine your networking skills", desc:"Reach out to 3–5 alumni or professionals each week on LinkedIn. Ask about their career paths, day-to-day work, and potential opportunities." },
+        { id:"4-w-5", title:"Research open calls, exhibitions, and jobs", desc:"Look for opportunities that fit your creative goals. Many have deadlines months ahead — customize each application to highlight how your work aligns." },
+      ]},
+      { name: "Spring", items: [
+        { id:"4-s-1", title:"Apply to opportunities", desc:"Ramp up your job search using ArtWorks, job boards, and your network. Customize your resume and cover letter for each role. International students: meet with ISSA about OPT requirements." },
+        { id:"4-s-2", title:"Prepare for post-graduation work and projects", desc:"If planning freelance or independent work, build a schedule, organize tasks, and set your rates, contracts, and systems." },
+        { id:"4-s-3", title:"Use CreativeStudy tutorials for business & finance", desc:"Gain key personal business and finance knowledge vital to your creative practice." },
+        { id:"4-s-4", title:"Schedule final portfolio review", desc:"Meet with a faculty member, mentor, or Career Center advisor and attend the Design or Fine Art Portfolio Review before graduation." },
+        { id:"4-s-5", title:"Practice interviewing & finalize your job search", desc:"Practice with the Career Center. Rehearse responses about your work, goals, and creative process. Be confident discussing your portfolio and career aspirations." },
+      ]},
+      { name: "Post-Graduation", items: [
+        { id:"4-pg-1", title:"Keep networking after graduation", desc:"Continue reaching out to alumni, employers, and colleagues. Attend alumni events, maintain relationships via LinkedIn, and stay active in your creative community." },
+        { id:"4-pg-2", title:"Continue to grow your portfolio", desc:"Keep adding new work, projects, and experiences to show your evolving artistic practice and professional skills." },
+        { id:"4-pg-3", title:"Follow up on job applications and offers", desc:"Follow up with hiring managers on outstanding applications. Carefully assess any offers — salary, culture, alignment with goals. Book an appointment for salary negotiation guidance." },
+        { id:"4-pg-4", title:"Stay organized and set goals for your career", desc:"Establish a plan for your first months after graduation — full-time work, residencies, or expanding your practice. Staying organized and setting clear goals is key." },
+        { id:"4-pg-5", title:"Meet with a Career Advisor", desc:"As alumni, you can always book career advising appointments with the RISD Career Center. Reach out at any time for support in employment, freelance, grad school, or entrepreneurship." },
+      ]}
+    ]
+  }
+};
+
+/* ════════════════════════════════════════════════
+   APP STATE
+   ════════════════════════════════════════════════ */
+let currentUser = null;
+let isAdmin = false;
+let currentYear = 1;
+let completedItems = {};
+let adminViewEmail = null;
+
+/* ════════════════════════════════════════════════
+   BANNER
+   ════════════════════════════════════════════════ */
+function dismissBanner() {
+  document.getElementById('config-banner').style.display = 'none';
+}
+
+/* ════════════════════════════════════════════════
+   DEMO SIGN-IN (replaces Google OAuth for local preview)
+   ════════════════════════════════════════════════ */
+function initGoogleSignIn() {
+  const saved = sessionStorage.getItem('risd_user');
+  if (saved) {
+    const u = JSON.parse(saved);
+    signInUser(u.email, u.name, u.picture);
+  }
+}
+
+function demoSignIn() {
+  const email = document.getElementById('demo-email-input').value.trim().toLowerCase();
+  if (!email || !email.includes('@')) { toast('Please enter a valid email address'); return; }
+  const isAdminEmail = CONFIG.ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email);
+  if (!isAdminEmail && !email.endsWith('@' + CONFIG.ALLOWED_DOMAIN)) {
+    showDomainError(email);
+    return;
+  }
+  const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  signInUser(email, name, null);
+}
+
+function demoAdminSignIn() {
+  const email = document.getElementById('demo-admin-email').value.trim().toLowerCase();
+  if (!email || !email.includes('@')) { toast('Please enter a valid email address'); return; }
+  closeModal('admin-modal');
+  const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  signInUser(email, name, null);
+  if (!CONFIG.ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email)) toast('⚠️ That email is not on the admin list');
+}
+
+function showDomainError(email) {
+  const domain = email.split('@')[1] || 'that domain';
+  document.getElementById('demo-email-input').style.borderColor = '#e24b4a';
+  const existing = document.getElementById('domain-error');
+  if (existing) existing.remove();
+  const err = document.createElement('div');
+  err.id = 'domain-error';
+  err.style.cssText = 'background:#fcebeb;border:1px solid #f09595;border-radius:8px;padding:10px 12px;font-size:13px;color:#a32d2d;line-height:1.5;text-align:left;margin-top:4px';
+  err.innerHTML = `<strong>Wrong account.</strong> Please sign in with your <strong>@${CONFIG.ALLOWED_DOMAIN}</strong> account, not @${domain}.`;
+  document.getElementById('demo-email-input').insertAdjacentElement('afterend', err);
+}
+
+async function signInUser(email, name, picture, profile = {}) {
+  currentUser = { email, name, picture };
+  sessionStorage.setItem('risd_user', JSON.stringify(currentUser));
+  isAdmin = CONFIG.ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email.toLowerCase());
+
+  document.getElementById('signin-screen').classList.remove('active');
+  // bottom nav removed
+
+  // Use preloaded first name if available, fallback to email prefix
+  const firstName = profile['First Name'] || (name ? name.split(' ')[0] : email.split('@')[0]);
+  const initials = [profile['First Name'], profile['Last Name']]
+    .filter(Boolean).map(n => n[0]).join('').toUpperCase()
+    || (name || email).split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase();
+
+  document.getElementById('user-avatar').textContent = initials;
+  const fullDisplayName = [profile['First Name'], profile['Last Name']].filter(Boolean).join(' ') || firstName;
+  document.getElementById('student-greeting').textContent = 'Welcome, ' + fullDisplayName;
+
+  // Populate signout modal with full profile
+  const major   = profile['Major']      ? ` · ${profile['Major']}` : '';
+  const gradYr  = profile['Grad Year']  ? ` · Class of ${profile['Grad Year']}` : '';
+  const group   = profile['Student Group'] ? `${profile['Student Group']}` : '';
+  document.getElementById('signout-email-display').innerHTML =
+    `<strong>${profile['First Name'] || ''} ${profile['Last Name'] || ''}</strong><br>
+     ${email}<br>
+     <span style="font-size:12px;color:var(--text-3)">${[group, profile['Major'], profile['Grad Year'] ? 'Class of ' + profile['Grad Year'] : ''].filter(Boolean).join(' · ')}</span>`;
+
+  if (isAdmin) document.getElementById('nav-admin').style.display = 'flex';
+
+  switchTab('splash');
+  await loadProgress(email);
+}
+
+function signOut() {
+  sessionStorage.removeItem('risd_user');
+  currentUser = null;
+  isAdmin = false;
+  completedItems = {};
+  closeModal('signout-modal');
+  showScreen('signin-screen');
+  // bottom nav removed
+  // bottom nav removed
+}
+
+/* ════════════════════════════════════════════════
+   NAVIGATION
+   ════════════════════════════════════════════════ */
+function switchTab(tab) {
+
+  if (tab === 'splash') {
+  
+    showScreen('splash-screen');
+    drawConcentricRings();
+    buildSplashTabs();
+  } else if (tab === 'checklist') {
+  
+    showScreen('student-screen');
+  } else if (tab === 'admin') {
+  
+    showScreen('admin-screen');
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const screen = document.getElementById(id);
+  screen.classList.add('active');
+  // Always scroll the newly shown screen to top
+  screen.scrollTop = 0;
+  window.scrollTo(0, 0);
+  // Hide splash overlay whenever we're not on the splash screen
+  if (id !== 'splash-screen') {
+    const overlay = document.getElementById('splash-title-overlay');
+    if (overlay) { clearTimeout(window._splashFadeTimer); overlay.style.transition = 'none'; overlay.style.opacity = '0'; }
+    const hint = document.getElementById('splash-hint');
+    if (hint) { clearTimeout(window._splashHintTimer); hint.style.animation = 'none'; hint.style.opacity = '0'; }
+  }
+}
+
+/* ════════════════════════════════════════════════
+   SPLASH SCREEN
+   ════════════════════════════════════════════════ */
+function updateSplashProfile(profile) {
+  const firstName = profile['First Name'] || '';
+  const lastName  = profile['Last Name']  || '';
+  const fullName  = [firstName, lastName].filter(Boolean).join(' ') || profile['Email'] || 'Student';
+  const gradYear  = profile['Grad Year'] ? 'Class of ' + profile['Grad Year'] : '';
+  const initials  = [firstName, lastName].filter(Boolean).map(n => n[0]).join('').toUpperCase()
+                    || fullName.slice(0,2).toUpperCase();
+
+  document.getElementById('splash-name').textContent    = fullName;
+  document.getElementById('splash-sub').textContent     = gradYear || 'RISD Career Center';
+  document.getElementById('splash-avatar').textContent  = initials;
+  document.getElementById('user-avatar').textContent    = initials;
+}
+
+function buildSplashTabs() {
+  const container = document.getElementById('splash-year-tabs');
+  container.innerHTML = '';
+  [1,2,3,4].forEach(y => {
+    const c   = YEAR_COLORS[y];
+    const d   = CHECKLIST[y];
+    const all = d.seasons.flatMap(s => s.items);
+    const done = all.filter(i => completedItems[i.id]).length;
+    const btn = document.createElement('button');
+    btn.className = 'splash-year-btn';
+    btn.style.background   = c.bg;
+    btn.style.borderColor  = c.bg;
+    btn.style.color        = c.text;
+    btn.innerHTML = d.label;
+    btn.onclick = () => {
+      currentYear = y;
+      applyYearColor(y);
+      buildYearTabs();
+      switchTab('checklist');
+      renderChecklist();
+      updateProgress();
+    };
+    container.appendChild(btn);
+  });
+}
+
+function drawConcentricRings() {
+  const svg = document.getElementById('splash-ring-svg');
+  svg.innerHTML = '';
+
+  const cx = 190, cy = 190;
+  const toRad = d => (d * Math.PI) / 180;
+
+  // Draw outermost year first (bottom), innermost last (top)
+  // This ensures inner rings always appear on top of outer rings
+  const bands = [
+    { year: 4, outerR: 164, innerR: 140 },
+    { year: 3, outerR: 126, innerR: 102 },
+    { year: 2, outerR: 88,  innerR: 64  },
+    { year: 1, outerR: 52,  innerR: 30  },
+  ];
+
+  function polarToXY(angleDeg, radius) {
+    const a = toRad(angleDeg);
+    return { x: cx + radius * Math.cos(a), y: cy + radius * Math.sin(a) };
+  }
+
+  function makeArcPath(startDeg, endDeg, outerR, innerR) {
+    const o1 = polarToXY(startDeg, outerR);
+    const o2 = polarToXY(endDeg,   outerR);
+    const i1 = polarToXY(endDeg,   innerR);
+    const i2 = polarToXY(startDeg, innerR);
+    const large = (endDeg - startDeg) > 180 ? 1 : 0;
+    return [
+      `M ${o1.x} ${o1.y}`,
+      `A ${outerR} ${outerR} 0 ${large} 1 ${o2.x} ${o2.y}`,
+      `L ${i1.x} ${i1.y}`,
+      `A ${innerR} ${innerR} 0 ${large} 0 ${i2.x} ${i2.y}`,
+      'Z'
+    ].join(' ');
+  }
+
+  // Draw track rings outermost first so inner rings sit on top
+  [...bands].forEach(({ outerR, innerR }) => {
+    const trackOuter = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    trackOuter.setAttribute('cx', cx); trackOuter.setAttribute('cy', cy);
+    trackOuter.setAttribute('r', outerR); trackOuter.setAttribute('fill', '#111');
+    const trackInner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    trackInner.setAttribute('cx', cx); trackInner.setAttribute('cy', cy);
+    trackInner.setAttribute('r', innerR); trackInner.setAttribute('fill', '#111');
+    svg.appendChild(trackOuter);
+    svg.appendChild(trackInner);
+  });
+
+  // Draw segments for each year ring
+  bands.forEach(({ year, outerR, innerR }) => {
+    const c       = YEAR_COLORS[year];
+    const all     = CHECKLIST[year].seasons.flatMap(s => s.items);
+    const total   = all.length;
+    const gap     = Math.min(2.5, 180 / total);
+    const segDeg  = (360 / total) - gap;
+    const allDone = all.every(i => completedItems[i.id]);
+
+    if (allDone) {
+      const outer = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      outer.setAttribute('cx', cx); outer.setAttribute('cy', cy);
+      outer.setAttribute('r', outerR); outer.setAttribute('fill', c.bg);
+      const inner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      inner.setAttribute('cx', cx); inner.setAttribute('cy', cy);
+      inner.setAttribute('r', innerR); inner.setAttribute('fill', '#111');
+      svg.appendChild(outer);
+      svg.appendChild(inner);
+    } else {
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('transform', `rotate(-90, ${cx}, ${cy})`);
+      all.forEach((item, i) => {
+        const isDone   = !!completedItems[item.id];
+        const startDeg = i * (360 / total);
+        const endDeg   = startDeg + segDeg;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', makeArcPath(startDeg, endDeg, outerR, innerR));
+        path.setAttribute('fill',         isDone ? c.bg : 'transparent');
+        path.setAttribute('stroke',       c.bg);
+        path.setAttribute('stroke-width', isDone ? '1' : '2');
+        path.setAttribute('opacity',      isDone ? '1' : '0.45');
+        g.appendChild(path);
+      });
+      svg.appendChild(g);
+    }
+  });
+
+  // Plain dark center circle — no text
+  const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+  dot.setAttribute('r', 22); dot.setAttribute('fill', '#111');
+  svg.appendChild(dot);
+
+  // Title overlay: snap visible, then fade out after 2s — only on splash screen
+  const overlay = document.getElementById('splash-title-overlay');
+  if (overlay && document.getElementById('splash-screen').classList.contains('active')) {
+    clearTimeout(window._splashFadeTimer);
+    overlay.style.transition = 'none';
+    overlay.style.opacity = '1';
+    window._splashFadeTimer = setTimeout(() => {
+      overlay.style.transition = 'opacity 0.8s ease';
+      overlay.style.opacity = '0';
+    }, 2000);
+  }
+
+  // Hint text: hidden until 5s, then pulse
+  const hint = document.getElementById('splash-hint');
+  if (hint) {
+    clearTimeout(window._splashHintTimer);
+    hint.style.animation = 'none';
+    hint.style.opacity = '0';
+    window._splashHintTimer = setTimeout(() => {
+      hint.style.animation = 'splashHintPulse 2s ease-in-out infinite';
+    }, 5000);
+  }
+}
+
+function showAdminLogin() { openModal('admin-modal'); }
+function showSignoutModal() { openModal('signout-modal'); }
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+/* ════════════════════════════════════════════════
+   YEAR TABS
+   ════════════════════════════════════════════════ */
+function applyYearColor(y) {
+  const c = YEAR_COLORS[y];
+  const d = CHECKLIST[y];
+  const overview = document.querySelector('.progress-overview');
+  if (!overview) return;
+  if (!document.getElementById('student-screen').classList.contains('active')) return;
+  overview.style.background = c.bg;
+  overview.style.color = c.text;
+  // Set CSS variable so done checklist items use the year color
+  document.getElementById('student-screen').style.setProperty('--year-color', c.bg);
+  // Update year label in the dark sticky header
+  const yearLabel = document.getElementById('student-year-label');
+  if (yearLabel) {
+    yearLabel.textContent = window._studentGradYear ? 'Class of ' + window._studentGradYear : 'RISD Career Center';
+  }
+  const ringCount = document.getElementById('ring-count');
+  const ringTotal = document.getElementById('ring-total');
+  const ringLabel = document.getElementById('ring-complete-label');
+  if (ringCount) ringCount.style.color = c.text;
+  if (ringTotal) ringTotal.style.color = c.text;
+  if (ringLabel) ringLabel.style.color = c.text === '#ffffff' ? '#ffe033' : '#1a1a1a';
+
+}
+
+function buildYearTabs() {
+  const container = document.getElementById('year-tabs');
+  if (!container) return; // year tabs removed from checklist page
+  const c = YEAR_COLORS[currentYear];
+  container.innerHTML = '';
+  [1,2,3,4].forEach(y => {
+    const d = CHECKLIST[y];
+    const isActive = y === currentYear;
+    const btn = document.createElement('button');
+    btn.className = 'year-tab' + (isActive ? ' active' : '');
+    btn.textContent = d.label;
+    if (isActive) {
+      btn.style.background = 'rgba(0,0,0,0.18)';
+      btn.style.color = c.text;
+      btn.style.borderColor = 'rgba(0,0,0,0.2)';
+      btn.style.fontWeight = '600';
+    } else {
+      btn.style.background = 'rgba(0,0,0,0.1)';
+      btn.style.color = c.text === '#ffffff' ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.55)';
+      btn.style.borderColor = 'rgba(0,0,0,0.12)';
+    }
+    btn.onclick = () => selectYear(y);
+    container.appendChild(btn);
+  });
+}
+
+function selectYear(y) {
+  currentYear = y;
+  applyYearColor(y);
+  buildYearTabs();
+  renderChecklist();
+  updateProgress();
+}
+
+/* ════════════════════════════════════════════════
+   PROGRESS RING
+   ════════════════════════════════════════════════ */
+function updateProgress() {
+  applyYearColor(currentYear);
+  const yearData = CHECKLIST[currentYear];
+  const all = yearData.seasons.flatMap(s => s.items);
+  const doneCount = all.filter(item => completedItems[item.id]).length;
+  const total = all.length;
+  const allDone = doneCount === total;
+
+  const svg = document.getElementById('progress-ring-svg');
+  const countEl = document.getElementById('ring-count');
+  const totalEl = document.getElementById('ring-total');
+  const completeEl = document.getElementById('ring-complete-label');
+
+  svg.innerHTML = '';
+
+  const cx = 100, cy = 100, r = 84;
+  const gap = 2.2; // degrees gap between segments
+  const segDeg = (360 / total) - gap;
+  const toRad = d => (d * Math.PI) / 180;
+
+  function polarToXY(angleDeg, radius) {
+    const a = toRad(angleDeg);
+    return { x: cx + radius * Math.cos(a), y: cy + radius * Math.sin(a) };
+  }
+
+  function makeArcPath(startDeg, endDeg, outerR, innerR) {
+    const o1 = polarToXY(startDeg, outerR);
+    const o2 = polarToXY(endDeg, outerR);
+    const i1 = polarToXY(endDeg, innerR);
+    const i2 = polarToXY(startDeg, innerR);
+    const largeArc = (endDeg - startDeg) > 180 ? 1 : 0;
+    return [
+      `M ${o1.x} ${o1.y}`,
+      `A ${outerR} ${outerR} 0 ${largeArc} 1 ${o2.x} ${o2.y}`,
+      `L ${i1.x} ${i1.y}`,
+      `A ${innerR} ${innerR} 0 ${largeArc} 0 ${i2.x} ${i2.y}`,
+      'Z'
+    ].join(' ');
+  }
+
+  // Wrap segments in a rotating group; center text stays outside SVG and is always static
+  const segGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+  if (allDone) {
+    // Draw all segments filled (black) — ring stays segmented, just all complete
+    all.forEach((item, i) => {
+      const startDeg = i * (360 / total);
+      const endDeg   = startDeg + segDeg;
+      const outerR = 92, innerR = 60;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', makeArcPath(startDeg, endDeg, outerR, innerR));
+      path.setAttribute('fill', '#111111');
+      path.setAttribute('stroke', 'white');
+      path.setAttribute('stroke-width', '1');
+      segGroup.appendChild(path);
+    });
+    svg.appendChild(segGroup);
+
+    // Spin the SVG itself (the whole canvas rotates around center)
+    svg.style.animation = 'ringRotate 23s linear infinite';
+    svg.style.transformOrigin = '50% 50%';
+
+    // Show DONE in center (outside SVG so it stays static)
+    countEl.classList.remove('hidden');
+    totalEl.classList.add('hidden');
+    completeEl.classList.remove('visible');
+    completeEl.style.display = 'none';
+    countEl.textContent = '✅';
+    countEl.style.fontSize = '72px';
+    countEl.style.letterSpacing = '0';
+
+    const ringYearLbl = document.getElementById('ring-year-label');
+    if (ringYearLbl) ringYearLbl.textContent = yearData.label + ' — ' + yearData.subtitle;
+
+  } else {
+    // Stop any spin
+    svg.style.animation = '';
+    // Reset count style
+    countEl.style.fontSize = '';
+    countEl.style.letterSpacing = '';
+
+    countEl.classList.remove('hidden');
+    totalEl.classList.remove('hidden');
+    completeEl.classList.remove('visible');
+    completeEl.style.display = 'none';
+    countEl.textContent = doneCount;
+    totalEl.textContent = 'of ' + total + ' done';
+
+    const ringYearLbl = document.getElementById('ring-year-label');
+    if (ringYearLbl) ringYearLbl.textContent = yearData.label + ' — ' + yearData.subtitle;
+
+    all.forEach((item, i) => {
+      const isDone   = !!completedItems[item.id];
+      const startDeg = i * (360 / total);
+      const endDeg   = startDeg + segDeg;
+      const outerR = 92, innerR = 60;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', makeArcPath(startDeg, endDeg, outerR, innerR));
+      path.setAttribute('fill', isDone ? '#111111' : 'transparent');
+      path.setAttribute('stroke', 'white');
+      path.setAttribute('stroke-width', '1');
+      segGroup.appendChild(path);
+    });
+    svg.appendChild(segGroup);
+  }
+}
+
+/* ════════════════════════════════════════════════
+   RENDER CHECKLIST
+   ════════════════════════════════════════════════ */
+function renderChecklist(targetEmail) {
+  const email = targetEmail || (adminViewEmail ? adminViewEmail : null);
+  const container = document.getElementById('checklist-body');
+  const yearData = CHECKLIST[currentYear];
+  container.innerHTML = '';
+
+  yearData.seasons.forEach(season => {
+    const sec = document.createElement('div');
+    sec.className = 'season-section';
+    sec.innerHTML = '<div class="season-label">' + season.name + '</div>';
+
+    season.items.forEach(item => {
+      const done = !!completedItems[item.id];
+      const div = document.createElement('div');
+      div.className = 'checklist-item' + (done ? ' done' : '');
+      div.dataset.id = item.id;
+      div.innerHTML = `
+        <div class="check-circle">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="item-text">
+          <div class="item-title">${item.title}</div>
+          <div class="item-desc">${item.desc}${done && completedItems[item.id + '_by_admin'] ? '<div class="item-meta" style="margin-top:8px"><span class="admin-badge">Marked by advisor</span></div>' : ''}</div>
+        </div>
+        <button class="expand-btn" aria-label="Show description">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>`;
+
+      div.querySelector('.check-circle').onclick = (e) => {
+        e.stopPropagation();
+        toggleItem(item.id, div);
+      };
+
+      div.querySelector('.expand-btn').onclick = (e) => {
+        e.stopPropagation();
+        const isExpanded = div.classList.contains('expanded');
+        // Collapse any other open item first
+        document.querySelectorAll('.checklist-item.expanded').forEach(el => el.classList.remove('expanded'));
+        if (!isExpanded) div.classList.add('expanded');
+      };
+
+      sec.appendChild(div);
+    });
+
+    container.appendChild(sec);
+  });
+}
+
+async function toggleItem(itemId, el) {
+  const wasChecked = !!completedItems[itemId];
+  const email = adminViewEmail || currentUser?.email;
+  if (!email) return;
+
+  completedItems[itemId] = !wasChecked;
+  if (!wasChecked && isAdmin && adminViewEmail) {
+    completedItems[itemId + '_by_admin'] = true;
+  } else if (wasChecked) {
+    delete completedItems[itemId + '_by_admin'];
+  }
+
+  el.classList.toggle('done', !wasChecked);
+  updateProgress();
+  // Keep splash rings in sync
+  if (document.getElementById('splash-ring-svg')) drawConcentricRings();
+
+  try {
+    await apiCall('setItem', { email, itemId, done: !wasChecked, byAdmin: isAdmin && !!adminViewEmail });
+    toast((!wasChecked ? '✓ Checked off' : 'Unchecked') + ' — saved');
+  } catch(e) {
+    toast('⚠️ Could not save — check connection');
+    completedItems[itemId] = wasChecked;
+    el.classList.toggle('done', wasChecked);
+    updateProgress();
+  }
+}
+
+/* ════════════════════════════════════════════════
+   API CALLS — demo mode uses in-memory storage;
+   live mode calls Google Apps Script.
+   ════════════════════════════════════════════════ */
+const demoStore = {};
+
+async function apiCall(action, params = {}) {
+  // ── DEMO MODE ──
+  if (CONFIG.DEMO_MODE) {
+    const email = (params.email || '').toLowerCase();
+    if (action === 'getProgress') {
+      // Try to get real profile from sheet so names display correctly
+      try {
+        const url = new URL(CONFIG.APPS_SCRIPT_URL);
+        url.searchParams.set('action', 'getProgress');
+        url.searchParams.set('email', email);
+        const resp = await fetch(url.toString());
+        console.log('[Demo] getProgress HTTP:', resp.status);
+        if (resp.ok) {
+          const data = await resp.json();
+          console.log('[Demo] getProgress data:', JSON.stringify(data));
+          if (data.profile && Object.keys(data.profile).length) {
+            return { found: true, profile: data.profile, completed: demoStore[email] || {} };
+          }
+          // Profile empty — sheet may not have this email yet
+          console.warn('[Demo] Profile empty for', email, '— check sheet has this email in column A');
+        }
+      } catch(e) {
+        console.warn('[Demo] Sheet fetch failed:', e.message);
+      }
+      return { found: !!demoStore[email], completed: demoStore[email] || {}, profile: {} };
+    }
+    if (action === 'setItem') {
+      if (!demoStore[email]) demoStore[email] = {};
+      const now = new Date().toISOString();
+      if (params.done === true || params.done === 'true') {
+        demoStore[email][params.itemId] = now;
+        if (params.byAdmin === true || params.byAdmin === 'true')
+          demoStore[email][params.itemId + '_by_admin'] = true;
+      } else {
+        delete demoStore[email][params.itemId];
+        delete demoStore[email][params.itemId + '_by_admin'];
+      }
+      return { ok: true };
+    }
+    if (action === 'updateProfile') return { ok: true };
+    if (action === 'importRoster') {
+      // Demo: just acknowledge
+      const roster = JSON.parse(params.roster || '[]');
+      return { ok: true, created: roster.length, updated: 0 };
+    }
+    return { error: 'Unknown action' };
+  }
+  // ── LIVE MODE ──
+  const url = new URL(CONFIG.APPS_SCRIPT_URL);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+  const resp = await fetch(url.toString());
+  if (!resp.ok) throw new Error('API error ' + resp.status);
+  return resp.json();
+}
+
+async function loadProgress(email) {
+  document.getElementById('checklist-body').innerHTML =
+    '<div class="state-msg"><div class="icon">⏳</div>Loading your progress…</div>';
+  buildYearTabs();
+  try {
+    const data = await apiCall('getProgress', { email });
+    if (data && data.completed) completedItems = data.completed;
+    if (data && data.profile && Object.keys(data.profile).length) {
+      const p = data.profile;
+      const firstName = p['First Name'] || email.split('@')[0];
+      const initials = [p['First Name'], p['Last Name']]
+        .filter(Boolean).map(n => n[0]).join('').toUpperCase()
+        || firstName.slice(0,2).toUpperCase();
+      document.getElementById('user-avatar').textContent    = initials;
+      const fullName = [p['First Name'], p['Last Name']].filter(Boolean).join(' ') || firstName;
+      window._studentGradYear = p['Grad Year'] || '';
+      const greetEl = document.getElementById('student-greeting');
+      if (greetEl) { greetEl.textContent = fullName; greetEl.style.color = 'white'; }
+      document.getElementById('signout-email-display').innerHTML =
+        `<strong>${p['First Name'] || ''} ${p['Last Name'] || ''}</strong><br>
+         ${email}<br>
+         <span style="font-size:12px;color:var(--text-3)">${[p['Student Group'], p['Major'], p['Grad Year'] ? 'Class of ' + p['Grad Year'] : ''].filter(Boolean).join(' · ')}</span>`;
+      updateSplashProfile(p);
+    } else {
+      // fallback: use email prefix formatted as name
+      const emailPrefix = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const greetEl2 = document.getElementById('student-greeting');
+      if (greetEl2) { greetEl2.textContent = emailPrefix; greetEl2.style.color = 'white'; }
+      updateSplashProfile({ 'First Name': emailPrefix });
+    }
+  } catch(e) {
+    console.warn('Could not load progress:', e);
+  }
+  // Show splash immediately — no orange flash
+  switchTab('splash');
+  // Set initial year color variable
+  document.getElementById('student-screen').style.setProperty('--year-color', YEAR_COLORS[currentYear].bg);
+  // Render checklist silently in background
+  renderChecklist();
+  updateProgress();
+}
+
+/* ════════════════════════════════════════════════
+   ADMIN FUNCTIONS
+   ════════════════════════════════════════════════ */
+let adminStudentProfile = {};
+
+async function loadStudentAdmin() {
+  const email = document.getElementById('student-email-input').value.trim().toLowerCase();
+  if (!email || !email.includes('@')) { toast('Enter a valid email'); return; }
+
+  adminViewEmail = email;
+  completedItems = {};
+  adminStudentProfile = {};
+
+  const area = document.getElementById('admin-student-area');
+  area.innerHTML = '<div class="state-msg"><div class="icon">⏳</div>Loading student progress…</div>';
+
+  try {
+    const data = await apiCall('getProgress', { email });
+    if (data && data.completed) completedItems = data.completed;
+    if (data && data.profile)   adminStudentProfile = data.profile;
+  } catch(e) {
+    console.warn('Could not load student data:', e);
+  }
+
+  const all  = Object.values(CHECKLIST).flatMap(y => y.seasons.flatMap(s => s.items));
+  const done = all.filter(i => completedItems[i.id]).length;
+  const pct  = Math.round((done / all.length) * 100);
+  const p    = adminStudentProfile;
+
+  area.innerHTML = `
+    <div class="admin-student-info">
+      <div>
+        <div class="student-email">${email}</div>
+        <div class="student-prog">Overall progress: ${done}/${all.length} (${pct}%)</div>
+      </div>
+      <button class="btn btn-primary" onclick="viewStudentChecklist()">View checklist</button>
+    </div>
+    <div style="padding:16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);margin-bottom:12px">Student profile</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">First name</label>
+          <input id="prof-first" value="${p['First Name']||''}" placeholder="First name"
+            style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);font-family:Georgia,serif"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Last name</label>
+          <input id="prof-last" value="${p['Last Name']||''}" placeholder="Last name"
+            style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);font-family:Georgia,serif"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Student group</label>
+          <input id="prof-group" value="${p['Student Group']||''}" placeholder="e.g. BFA, MFA"
+            style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);font-family:Georgia,serif"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Grad year</label>
+          <input id="prof-grad" value="${p['Grad Year']||''}" placeholder="e.g. 2027"
+            style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);font-family:Georgia,serif"/>
+        </div>
+        <div style="grid-column:1/-1">
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Major</label>
+          <input id="prof-major" value="${p['Major']||''}" placeholder="e.g. Illustration"
+            style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);font-family:Georgia,serif"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Degree level</label>
+          <input id="prof-deglvl" value="${p['Degree Level']||''}" placeholder="e.g. BFA, MFA"
+            style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);font-family:Georgia,serif"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-3);display:block;margin-bottom:3px">Degree</label>
+          <input id="prof-deg" value="${p['Degree']||''}" placeholder="e.g. Bachelor of Fine Arts"
+            style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg);color:var(--text);font-family:Georgia,serif"/>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveProfile()" style="margin-top:10px;width:100%;padding:10px">Save profile</button>
+    </div>`;
+}
+
+async function saveProfile() {
+  const email = adminViewEmail;
+  if (!email) return;
+  const params = {
+    email,
+    'First Name':    document.getElementById('prof-first').value.trim(),
+    'Last Name':     document.getElementById('prof-last').value.trim(),
+    'Student Group': document.getElementById('prof-group').value.trim(),
+    'Grad Year':     document.getElementById('prof-grad').value.trim(),
+    'Major':         document.getElementById('prof-major').value.trim(),
+    'Degree Level':  document.getElementById('prof-deglvl').value.trim(),
+    'Degree':        document.getElementById('prof-deg').value.trim(),
+  };
+  try {
+    await apiCall('updateProfile', params);
+    toast('\u2713 Profile saved');
+  } catch(e) {
+    toast('\u26a0\ufe0f Could not save profile');
+  }
+}
+
+function viewStudentChecklist() {
+  switchTab('checklist');
+  document.getElementById('student-greeting').textContent = 'Viewing: ' + adminViewEmail;
+  renderChecklist();
+  updateProgress();
+}
+
+/* ════════════════════════════════════════════════
+   ADMIN TAB SWITCHING
+   ════════════════════════════════════════════════ */
+function switchAdminTab(tab) {
+  const isStudent = tab === 'student';
+  document.getElementById('admin-panel-student').style.display = isStudent ? 'block' : 'none';
+  document.getElementById('admin-panel-roster').style.display  = isStudent ? 'none'  : 'block';
+  document.getElementById('tab-student').style.borderBottomColor = isStudent ? 'var(--risd-red)' : 'transparent';
+  document.getElementById('tab-student').style.color = isStudent ? 'var(--text)' : 'var(--text-3)';
+  document.getElementById('tab-student').style.fontWeight = isStudent ? '600' : '400';
+  document.getElementById('tab-roster').style.borderBottomColor = isStudent ? 'transparent' : 'var(--risd-red)';
+  document.getElementById('tab-roster').style.color = isStudent ? 'var(--text-3)' : 'var(--text)';
+  document.getElementById('tab-roster').style.fontWeight = isStudent ? '400' : '600';
+}
+
+/* ════════════════════════════════════════════════
+   CSV ROSTER IMPORT
+   ════════════════════════════════════════════════ */
+let parsedRoster = [];
+
+// Known column aliases → canonical field name
+const CSV_ALIASES = {
+  // ── Exact column names from 12twenty export ──
+  // Email
+  'email':                                    'Email',
+  'e-mail':                                   'Email',
+  'email address':                            'Email',   // 12twenty export
+  'student identifier (email or 12twenty id)':'Email',   // 12twenty upload template
+  // First Name
+  'first name':                               'First Name',
+  'first name.1':                             'First Name', // 12twenty duplicate col
+  'firstname':                                'First Name',
+  'first':                                    'First Name',
+  'chosen name':                              'First Name',
+  // Last Name
+  'last name':                                'Last Name',
+  'last name.1':                              'Last Name', // 12twenty duplicate col
+  'lastname':                                 'Last Name',
+  'last':                                     'Last Name',
+  // Student Group
+  'student group':                            'Student Group',
+  'student group 1':                          'Student Group',
+  'group':                                    'Student Group',
+  // Grad Year
+  'grad year':                                'Grad Year',
+  'graduation year':                          'Grad Year',  // 12twenty export
+  'class year':                               'Grad Year',
+  'class of':                                 'Grad Year',
+  'graduation term':                          'Grad Year',
+  '[education] graduation term':              'Grad Year',
+  'term':                                     'Grad Year',
+  // Major
+  'major':                                    'Major',       // 12twenty export
+  '[education] major 1':                      'Major',
+  'major 1':                                  'Major',
+  '[education] major/academic program 1':     'Major',
+  'major/academic program 1':                 'Major',
+  '[education] program':                      'Major',
+  'concentration':                            'Major',
+  'department':                               'Major',
+  // Degree Level
+  'degree level':                             'Degree Level', // 12twenty export
+  '[education] degree level':                 'Degree Level',
+  // Degree
+  'degree':                                   'Degree',       // 12twenty export
+  '[education] degree 1':                     'Degree',
+  'degree 1':                                 'Degree',
+};
+const REQUIRED_FIELDS = ['Email'];
+const ALL_FIELDS = ['Email','First Name','Last Name','Student Group','Grad Year','Major','Degree Level','Degree'];
+
+function handleCSVUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('csv-filename').textContent = file.name;
+  document.getElementById('csv-upload-label').style.borderColor = 'var(--risd-red-muted)';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const rows = parseCSV(e.target.result);
+      if (rows.length < 2) { showCSVError('CSV appears to be empty.'); return; }
+      const headers = rows[0].map(h => h.trim());
+      const mapped  = mapHeaders(headers);
+      if (!mapped['Email']) { showCSVError('Could not find an Email column. Check your CSV headers.'); return; }
+
+      parsedRoster = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (row.every(c => !c.trim())) continue; // skip blank rows
+        const student = {};
+        ALL_FIELDS.forEach(field => {
+          const idx = mapped[field];
+          student[field] = idx !== undefined ? (row[idx] || '').trim() : '';
+        });
+        if (!student['Email']) continue;
+        parsedRoster.push(student);
+      }
+
+      if (!parsedRoster.length) { showCSVError('No valid student rows found.'); return; }
+      showPreview(parsedRoster);
+    } catch(err) {
+      showCSVError('Could not parse CSV: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function mapHeaders(headers) {
+  const map = {};
+  headers.forEach((h, i) => {
+    const canonical = CSV_ALIASES[h.toLowerCase().trim()];
+    if (canonical && map[canonical] === undefined) map[canonical] = i;
+  });
+  return map;
+}
+
+function parseCSV(text) {
+  // Handles quoted fields with commas/newlines inside
+  const rows = [];
+  let row = [], field = '', inQuote = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i], next = text[i+1];
+    if (inQuote) {
+      if (ch === '"' && next === '"') { field += '"'; i++; }
+      else if (ch === '"') inQuote = false;
+      else field += ch;
+    } else {
+      if (ch === '"') { inQuote = true; }
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        row.push(field); field = '';
+        if (row.some(c => c.trim())) rows.push(row);
+        row = [];
+        if (ch === '\r' && next === '\n') i++;
+      } else field += ch;
+    }
+  }
+  if (field || row.length) { row.push(field); if (row.some(c => c.trim())) rows.push(row); }
+  return rows;
+}
+
+function showPreview(students) {
+  document.getElementById('csv-preview-area').style.display = 'block';
+  document.getElementById('csv-result-area').style.display  = 'none';
+  document.getElementById('csv-preview-title').textContent  = `${students.length} students ready to import`;
+  document.getElementById('csv-preview-subtitle').textContent = 'Review before importing. Task progress is never affected.';
+  document.getElementById('csv-import-btn').textContent = `Import ${students.length} students`;
+
+  // Build preview table (show first 50 rows max)
+  const preview = students.slice(0, 50);
+  const head = document.getElementById('csv-preview-head');
+  const body = document.getElementById('csv-preview-body');
+
+  head.innerHTML = '<tr>' + ALL_FIELDS.map(f =>
+    `<th style="padding:7px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--text-3);white-space:nowrap;border-bottom:1px solid var(--border)">${f}</th>`
+  ).join('') + '</tr>';
+
+  body.innerHTML = preview.map((s, idx) =>
+    `<tr style="background:${idx%2===0?'var(--surface)':'var(--bg)'}">` +
+    ALL_FIELDS.map(f =>
+      `<td style="padding:7px 10px;font-size:12px;border-bottom:1px solid var(--border);white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis">${s[f] || ''}</td>`
+    ).join('') + '</tr>'
+  ).join('');
+
+  if (students.length > 50) {
+    body.innerHTML += `<tr><td colspan="${ALL_FIELDS.length}" style="padding:8px 10px;font-size:12px;color:var(--text-3);text-align:center;font-style:italic">… and ${students.length - 50} more</td></tr>`;
+  }
+}
+
+function showCSVError(msg) {
+  document.getElementById('csv-preview-area').style.display = 'none';
+  document.getElementById('csv-result-area').style.display  = 'block';
+  document.getElementById('csv-result-icon').textContent    = '⚠️';
+  document.getElementById('csv-result-msg').textContent     = 'Could not read file';
+  document.getElementById('csv-result-detail').textContent  = msg;
+}
+
+function clearCSV() {
+  parsedRoster = [];
+  document.getElementById('csv-file-input').value = '';
+  document.getElementById('csv-filename').textContent = '';
+  document.getElementById('csv-upload-label').style.borderColor = 'var(--border)';
+  document.getElementById('csv-preview-area').style.display = 'none';
+  document.getElementById('csv-result-area').style.display  = 'none';
+}
+
+async function commitImport() {
+  if (!parsedRoster.length) return;
+  const btn = document.getElementById('csv-import-btn');
+  btn.textContent = 'Importing…';
+  btn.disabled = true;
+
+  try {
+    // Send in batches of 50 to stay within URL length limits
+    const BATCH = 50;
+    let created = 0, updated = 0;
+    for (let i = 0; i < parsedRoster.length; i += BATCH) {
+      const batch = parsedRoster.slice(i, i + BATCH);
+      const result = await apiCall('importRoster', { roster: JSON.stringify(batch) });
+      if (result.error) throw new Error(result.error);
+      created += result.created || 0;
+      updated += result.updated || 0;
+      btn.textContent = `Importing… ${Math.min(i + BATCH, parsedRoster.length)}/${parsedRoster.length}`;
+    }
+    document.getElementById('csv-preview-area').style.display = 'none';
+    document.getElementById('csv-result-area').style.display  = 'block';
+    document.getElementById('csv-result-icon').textContent    = '✅';
+    document.getElementById('csv-result-msg').textContent     = 'Import complete';
+    document.getElementById('csv-result-detail').textContent  = `${created} students added · ${updated} students updated`;
+  } catch(err) {
+    document.getElementById('csv-preview-area').style.display = 'none';
+    document.getElementById('csv-result-area').style.display  = 'block';
+    document.getElementById('csv-result-icon').textContent    = '⚠️';
+    document.getElementById('csv-result-msg').textContent     = 'Import failed';
+    document.getElementById('csv-result-detail').textContent  = err.message;
+    btn.disabled = false;
+    btn.textContent = `Import ${parsedRoster.length} students`;
+  }
+}
+
+/* ════════════════════════════════════════════════
+   UTILS
+   ════════════════════════════════════════════════ */
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  if (window.google) initGoogleSignIn();
+  else {
+    const script = document.querySelector('script[src*="accounts.google.com"]');
+    if (script) script.addEventListener('load', initGoogleSignIn);
+    else initGoogleSignIn();
+  }
+});
+</script>
+
+<!--
+════════════════════════════════════════════════════════════════════
+SETUP GUIDE — Read before deploying
+════════════════════════════════════════════════════════════════════
+
+STEP 1: Google Cloud Console — Get your Client ID
+─────────────────────────────────────────────────
+1. Go to https://console.cloud.google.com
+2. Create a new project (or use an existing one)
+3. Go to APIs & Services → OAuth consent screen
+   - Set user type to "Internal" (restricts to your school's Google Workspace)
+   - Fill in app name, support email
+4. Go to APIs & Services → Credentials → Create Credentials → OAuth client ID
+   - Application type: Web application
+   - Name: RISD Career Readiness
+   - Authorized JavaScript origins: add the domain where you'll host this file
+     e.g. https://yourschool.edu or http://localhost for testing
+5. Copy the Client ID and paste it into CONFIG.GOOGLE_CLIENT_ID above
+
+STEP 2: Google Sheets — Create your spreadsheet
+────────────────────────────────────────────────
+1. Create a new Google Sheet
+2. Name it "RISD Career Readiness Progress"
+3. Note the spreadsheet ID from the URL:
+   https://docs.google.com/spreadsheets/d/1Dc0wfLkSQYVV0eYr7-Fkqn-sGAfdLTrBUCB23-QM0Jk/edit
+
+STEP 3: Google Apps Script — Create the backend
+────────────────────────────────────────────────
+1. Go to https://script.google.com
+2. Create a new project named "RISD Career Readiness API"
+3. Paste this code (replacing SPREADSHEET_ID with yours):
+
+─── APPS SCRIPT CODE ───────────────────────────
+
+const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
+const SHEET_NAME = 'Progress';
+
+function doGet(e) {
+  const action = e.parameter.action;
+  const email = (e.parameter.email || '').toLowerCase().trim();
+
+  if (!email) return jsonResponse({ error: 'No email' });
+
+  try {
+    if (action === 'getProgress') return jsonResponse(getProgress(email));
+    if (action === 'setItem')     return jsonResponse(setItem(e.parameter));
+    return jsonResponse({ error: 'Unknown action' });
+  } catch(err) {
+    return jsonResponse({ error: err.message });
+  }
+}
+
+function getSheet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.appendRow(['email', 'item_id', 'done', 'updated_at', 'by_admin']);
+  }
+  return sheet;
+}
+
+function getProgress(email) {
+  const sheet = getSheet();
+  const data = sheet.getDataRange().getValues();
+  const completed = {};
+  for (let i = 1; i < data.length; i++) {
+    const [rowEmail, itemId, done, , byAdmin] = data[i];
+    if (rowEmail.toLowerCase() === email && done === true) {
+      completed[itemId] = true;
+      if (byAdmin === true) completed[itemId + '_by_admin'] = true;
+    }
+  }
+  return { completed };
+}
+
+function setItem(params) {
+  const email = (params.email || '').toLowerCase().trim();
+  const itemId = params.itemId;
+  const done = params.done === 'true';
+  const byAdmin = params.byAdmin === 'true';
+
+  const sheet = getSheet();
+  const data = sheet.getDataRange().getValues();
+  const now = new Date().toISOString();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0].toLowerCase() === email && data[i][1] === itemId) {
+      sheet.getRange(i + 1, 3).setValue(done);
+      sheet.getRange(i + 1, 4).setValue(now);
+      sheet.getRange(i + 1, 5).setValue(byAdmin);
+      return { ok: true };
+    }
+  }
+  sheet.appendRow([email, itemId, done, now, byAdmin]);
+  return { ok: true };
+}
+
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+─── END OF APPS SCRIPT CODE ────────────────────
+
+4. Save the script
+5. Click Deploy → New deployment
+   - Type: Web app
+   - Execute as: Me
+   - Who has access: Anyone (this is safe — no private data is exposed)
+6. Copy the Web App URL and paste it into CONFIG.APPS_SCRIPT_URL above
+
+STEP 4: Update CONFIG in this file
+───────────────────────────────────
+Edit the CONFIG block near the top of the <script> section:
+- GOOGLE_CLIENT_ID: your Client ID from Step 1
+- APPS_SCRIPT_URL: your Web App URL from Step 3
+- ADMIN_EMAILS: list of email addresses that should have admin access
+
+STEP 5: Host the file
+──────────────────────
+Host this single HTML file anywhere:
+- Your school's web server
+- GitHub Pages (free): https://pages.github.com
+- Netlify (free): https://netlify.com — just drag and drop the file
+- Google Drive (share as web page, though limited)
+
+Students just need the URL — no app to install!
+
+SECURITY NOTES:
+- Setting the OAuth consent screen to "Internal" means only your school's
+  Google accounts can sign in — strongly recommended
+- Only emails are stored in the sheet, no names or personal data
+- The Apps Script runs as you, so students can't access or modify the sheet directly
+- Add admin emails carefully — admins can check off items for any student
+
+════════════════════════════════════════════════════════════════════
+-->
+</body>
+</html>
