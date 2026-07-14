@@ -78,6 +78,7 @@
   }
   #splash-screen.active { background: #111; }
   #student-screen.active { background: #111; }
+  #onboarding-screen.active { background: #111; }
 
   /* ── HEADER ── */
   .app-header {
@@ -665,6 +666,68 @@
   </div>
 </div>
 
+
+<!-- ONBOARDING SCREEN -->
+<div id="onboarding-screen" class="screen" style="background:#111;">
+  <div class="signin-card" style="max-width:380px;margin:0 auto;padding:32px 24px;background:transparent;border:none;">
+
+    <!-- Logo + title (same as signin) -->
+    <div class="signin-logo"><svg width="56" height="56" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs><style>
+    .io-1{fill:#fd9a1a;stroke:#fd9a1a}
+    .io-1,.io-2,.io-3,.io-4,.io-5{stroke-miterlimit:10}
+    .io-1,.io-2,.io-3,.io-5{stroke-width:70px}
+    .io-2{stroke:#5ceaff}.io-2,.io-3,.io-5{fill:none}
+    .io-3{stroke:#bdf452}.io-4{stroke:none;fill:none}
+    .io-5{stroke:#f1369f}
+  </style></defs>
+  <rect class="io-4" width="1080" height="1080"/>
+  <circle class="io-1" cx="540" cy="540" r="147.06"/>
+  <circle class="io-2" cx="540" cy="540" r="264.71"/>
+  <circle class="io-5" cx="540" cy="540" r="382.35"/>
+  <circle class="io-3" cx="540" cy="540" r="500"/>
+</svg></div>
+    <h2>Career Readiness</h2>
+
+    <!-- Instructional text -->
+    <p style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.7;margin-bottom:20px;text-align:left">
+      This is a Career Task button. Expand the task to the right to read the full task description. Check the box on the left to mark as completed. Each completed task brings you one step closer to closing your Career Readiness rings!
+    </p>
+
+    <!-- Mini Year 1 ring -->
+    <div style="display:flex;justify-content:center;margin-bottom:16px">
+      <svg id="onboard-ring-svg" viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- Sample task button (Year 1 style) -->
+    <div id="onboard-task" style="background:white;border:1px solid #e2e0db;border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px">
+      <div id="onboard-check" onclick="toggleOnboardTask()" style="width:22px;height:22px;border-radius:50%;border:1.5px solid #e2e0db;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:white;transition:all .15s">
+        <svg id="onboard-check-svg" width="12" height="12" viewBox="0 0 12 12" fill="none" style="display:none">
+          <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div style="flex:1">
+        <div id="onboard-title" style="font-size:14px;font-weight:500;line-height:1.3;color:#1a1a1a;font-family:Georgia,serif">Start Career Readiness tracking.</div>
+        <div id="onboard-desc" style="font-size:12px;color:#888884;margin-top:6px;line-height:1.5;display:none;font-family:Georgia,serif">
+          Welcome to the first step in your Career Readiness journey! Follow these tasks geared to each year in school. Start with the 1st Year to build foundational skills for your professional practice!
+        </div>
+      </div>
+      <button onclick="toggleOnboardDesc()" style="flex-shrink:0;width:28px;height:28px;margin-top:-3px;margin-right:-4px;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;color:#888884;border:none;background:none;transition:transform .2s" id="onboard-arrow">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M5 3l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- CTA button -->
+    <button onclick="switchTab('splash')"
+      style="width:100%;padding:13px;background:#fd9a1a;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:Georgia,serif;letter-spacing:0.01em">
+      Go to Your Dashboard
+    </button>
+
+  </div>
+</div>
+
 <!-- SPLASH SCREEN -->
 <div id="splash-screen" class="screen">
   <div class="splash-header">
@@ -696,7 +759,7 @@
     </div>
   </div>
   <div class="splash-year-tabs" id="splash-year-tabs"></div>
-  <div id="splash-hint" style="opacity:0;transition:none;font-family:Georgia,serif;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;padding:14px 24px 0;pointer-events:none">(Click a circle button to see career tasks)</div>
+  <div id="splash-hint" style="opacity:0;transition:none;font-family:Georgia,serif;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;padding:14px 24px 0;pointer-events:none">(Click a Year button to see career tasks.)</div>
 </div>
 
 <!-- MAIN STUDENT APP -->
@@ -902,12 +965,15 @@ const YEAR_COLORS = {
   4: { bg: '#bdf452', text: '#1a1a1a', tabActive: '#1a1a1a' },
 };
 
+const ONBOARD_TASK_ID = '1-onboard-1';
+
 const CHECKLIST = {
   1: {
     label: "1st Year",
     subtitle: "Explore",
     seasons: [
       { name: "Fall", items: [
+        { id:"1-onboard-1", title:"Start Career Readiness tracking.", desc:"Welcome to the first step in your Career Readiness journey! Follow these tasks geared to each year in school. Start with the 1st Year to build foundational skills for your professional practice!" },
         { id:"1-f-1", title:"Access your ArtWorks account", desc:"Log into ArtWorks, RISD's platform for jobs, internships, freelance, and artist opportunities. Use it to schedule Career Center appointments and stay updated on events." },
         { id:"1-f-2", title:"Get to know Career Center resources", desc:"Familiarize yourself with the Career Center website — internships, jobs, career preparation, artist resources, residencies, grants, business, and entrepreneurship information." },
         { id:"1-f-3", title:"Attend a fall Career Center program", desc:"Attend at least one career program this semester. Most are one hour long and packed with helpful career development information." },
@@ -1162,7 +1228,11 @@ function signOut() {
    ════════════════════════════════════════════════ */
 function switchTab(tab) {
 
-  if (tab === 'splash') {
+  if (tab === 'onboarding') {
+    showScreen('onboarding-screen');
+    syncOnboardUI();
+    drawOnboardRing();
+  } else if (tab === 'splash') {
   
     showScreen('splash-screen');
     drawConcentricRings();
@@ -1339,6 +1409,41 @@ function drawConcentricRings() {
       overlay.style.transition = 'opacity 0.8s ease';
       overlay.style.opacity = '0';
     }, 2000);
+  }
+
+  // Arc text around outside of 4th ring
+  const existingArc = svg.getElementById('ring-arc-text');
+  if (!existingArc) {
+    const arcR = 178;
+    const arcId = 'ring-arc-' + Date.now();
+    const arcPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    // Arc from ~200° to ~340° (bottom arc, sweeping clockwise under the ring)
+    const startAngle = 195 * Math.PI / 180;
+    const endAngle   = 345 * Math.PI / 180;
+    const sx = cx + arcR * Math.cos(startAngle);
+    const sy = cy + arcR * Math.sin(startAngle);
+    const ex = cx + arcR * Math.cos(endAngle);
+    const ey = cy + arcR * Math.sin(endAngle);
+    arcPath.setAttribute('id', arcId);
+    arcPath.setAttribute('d', `M ${sx} ${sy} A ${arcR} ${arcR} 0 0 1 ${ex} ${ey}`);
+    arcPath.setAttribute('fill', 'none');
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    defs.appendChild(arcPath);
+    svg.insertBefore(defs, svg.firstChild);
+
+    const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    textEl.setAttribute('id', 'ring-arc-text');
+    textEl.setAttribute('font-family', 'Georgia, serif');
+    textEl.setAttribute('font-size', '11');
+    textEl.setAttribute('fill', 'rgba(255,255,255,0.4)');
+    textEl.setAttribute('letter-spacing', '0.5');
+    const tp = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
+    tp.setAttribute('href', '#' + arcId);
+    tp.setAttribute('startOffset', '50%');
+    tp.setAttribute('text-anchor', 'middle');
+    tp.textContent = 'Complete tasks to close your rings for each year in school.';
+    textEl.appendChild(tp);
+    svg.appendChild(textEl);
   }
 
   // Hint text: hidden until 5s, then pulse
@@ -1785,8 +1890,8 @@ async function loadProgress(email) {
   } catch(e) {
     console.warn('Could not load progress:', e);
   }
-  // Show splash immediately — no orange flash
-  switchTab('splash');
+  // Show onboarding on first login, splash thereafter
+  switchTab('onboarding');
   // Set initial year color variable
   document.getElementById('student-screen').style.setProperty('--year-color', YEAR_COLORS[currentYear].bg);
   // Render checklist silently in background
@@ -2131,6 +2236,123 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+
+/* ════════════════════════════════════════════════
+   ONBOARDING SCREEN
+   ════════════════════════════════════════════════ */
+let _onboardDone = false;
+let _onboardExpanded = false;
+
+function drawOnboardRing() {
+  const svg = document.getElementById('onboard-ring-svg');
+  if (!svg) return;
+  svg.innerHTML = '';
+
+  const cx = 100, cy = 100, outerR = 92, innerR = 60;
+  const c = YEAR_COLORS[1];
+  const toRad = d => d * Math.PI / 180;
+
+  // All Year 1 items (includes the onboard task since it's now in CHECKLIST)
+  const year1Items = CHECKLIST[1].seasons.flatMap(s => s.items);
+  const total = year1Items.length;
+  const gap = Math.min(2.2, 180 / total);
+  const segDeg = (360 / total) - gap;
+
+  function polarToXY(deg, r) {
+    const a = toRad(deg);
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  }
+
+  function makeArcPath(startDeg, endDeg, oR, iR) {
+    const o1 = polarToXY(startDeg, oR), o2 = polarToXY(endDeg, oR);
+    const i1 = polarToXY(endDeg, iR),  i2 = polarToXY(startDeg, iR);
+    const large = (endDeg - startDeg) > 180 ? 1 : 0;
+    return `M ${o1.x} ${o1.y} A ${oR} ${oR} 0 ${large} 1 ${o2.x} ${o2.y} L ${i1.x} ${i1.y} A ${iR} ${iR} 0 ${large} 0 ${i2.x} ${i2.y} Z`;
+  }
+
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('transform', `rotate(-90, ${cx}, ${cy})`);
+
+  year1Items.forEach((item, i) => {
+    const isDone = !!completedItems[item.id];
+    const isOnboard = item.id === ONBOARD_TASK_ID;
+    const startDeg = i * (360 / total);
+    const endDeg = startDeg + segDeg;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', makeArcPath(startDeg, endDeg, outerR, innerR));
+    // Onboard segment fills orange when done so student can see it clearly on black
+    // Other segments stay transparent (they'll complete later on the year screen)
+    path.setAttribute('fill', isOnboard && isDone ? c.bg : 'transparent');
+    path.setAttribute('stroke', c.bg);
+    path.setAttribute('stroke-width', isOnboard ? '2.5' : '1.5');
+    path.setAttribute('opacity', isOnboard ? '1' : '0.5');
+    if (isOnboard) path.setAttribute('id', 'onboard-seg');
+    g.appendChild(path);
+  });
+
+  svg.appendChild(g);
+}
+
+function toggleOnboardTask() {
+  const wasDone = !!completedItems[ONBOARD_TASK_ID];
+  const nowDone = !wasDone;
+
+  // Write to shared completedItems so Year 1 and splash stay in sync
+  if (nowDone) {
+    completedItems[ONBOARD_TASK_ID] = new Date().toISOString();
+  } else {
+    delete completedItems[ONBOARD_TASK_ID];
+  }
+
+  // Persist via apiCall (same as real tasks)
+  apiCall('setItem', {
+    email: currentUser?.email || '',
+    itemId: ONBOARD_TASK_ID,
+    done: nowDone,
+    byAdmin: false
+  });
+
+  // Update onboarding UI
+  syncOnboardUI();
+
+  // Sync ring animations on other screens
+  drawOnboardRing();
+  if (document.getElementById('splash-screen').classList.contains('active')) drawConcentricRings();
+  updateProgress();
+}
+
+function syncOnboardUI() {
+  const done = !!completedItems[ONBOARD_TASK_ID];
+  const check = document.getElementById('onboard-check');
+  const checkSvg = document.getElementById('onboard-check-svg');
+  const task = document.getElementById('onboard-task');
+  const title = document.getElementById('onboard-title');
+  if (!check) return;
+  if (done) {
+    check.style.background = '#fd9a1a';
+    check.style.borderColor = '#fd9a1a';
+    if (checkSvg) checkSvg.style.display = 'block';
+    task.style.background = 'rgba(253,154,26,0.15)';
+    task.style.borderColor = 'rgba(253,154,26,0.4)';
+    title.style.textDecoration = 'line-through';
+    title.style.color = '#fd9a1a';
+  } else {
+    check.style.background = 'white';
+    check.style.borderColor = '#e2e0db';
+    if (checkSvg) checkSvg.style.display = 'none';
+    task.style.background = 'white';
+    task.style.borderColor = '#e2e0db';
+    title.style.textDecoration = 'none';
+    title.style.color = '#1a1a1a';
+  }
+}
+
+function toggleOnboardDesc() {
+  _onboardExpanded = !_onboardExpanded;
+  document.getElementById('onboard-desc').style.display = _onboardExpanded ? 'block' : 'none';
+  document.getElementById('onboard-arrow').style.transform = _onboardExpanded ? 'rotate(90deg)' : '';
 }
 
 /* ════════════════════════════════════════════════
