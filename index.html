@@ -918,17 +918,10 @@
 <!-- LOADING OVERLAY -->
 <div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;align-items:center;justify-content:center;flex-direction:column">
   <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" style="animation:spin 0.8s linear infinite">
-    <defs>
-      <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%"   stop-color="#fd9a1a"/>
-        <stop offset="25%"  stop-color="#f1369f"/>
-        <stop offset="50%"  stop-color="#5deaff"/>
-        <stop offset="75%"  stop-color="#bdf452"/>
-        <stop offset="100%" stop-color="#fd9a1a"/>
-      </linearGradient>
-    </defs>
-    <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="5"/>
-    <path d="M28 6 A22 22 0 0 1 50 28" fill="none" stroke="url(#rainbow)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 30.30 6.12 A 22 22 0 0 1 49.88 25.70" fill="none" stroke="#fd9a1a" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 49.88 30.30 A 22 22 0 0 1 30.30 49.88" fill="none" stroke="#5deaff" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 25.70 49.88 A 22 22 0 0 1 6.12 30.30" fill="none" stroke="#f1369f" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 6.12 25.70 A 22 22 0 0 1 25.70 6.12" fill="none" stroke="#bdf452" stroke-width="5" stroke-linecap="round"/>
   </svg>
 </div>
 
