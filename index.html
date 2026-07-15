@@ -77,7 +77,7 @@
     z-index: 1;
   }
   #splash-screen.active { background: #111; }
-  #student-screen.active { background: #111; }
+  #student-screen.active { background: #111; display: flex !important; flex-direction: column; overflow: hidden !important; }
   #onboarding-screen.active { background: #111; }
 
   /* ── HEADER ── */
@@ -166,6 +166,7 @@
 
   /* ── PROGRESS RING ── */
   .progress-overview {
+    flex-shrink: 0;
     background: #fd9a1a;
     padding: 20px 20px 24px;
     color: #1a1a1a;
@@ -343,7 +344,7 @@
   }
   .splash-year-btn:hover { opacity: 0.85; }
   .splash-year-btn:active { transform: scale(0.97); }
-  .checklist-body { padding: 16px 16px 0; background: #111; min-height: 100%; }
+  .checklist-body { padding: 16px 16px 24px; background: #111; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .season-section { margin-bottom: 20px; }
   .season-label {
     font-family: 'Roboto', sans-serif;
@@ -608,6 +609,10 @@
   .setup-field input:focus, .setup-field textarea:focus { border-color: var(--risd-red-muted); }
   .setup-field textarea { resize: vertical; min-height: 80px; font-size: 12px; }
 
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
   @keyframes ringRotate {
     from { transform: rotate(-90deg); }
     to   { transform: rotate(270deg); }
@@ -708,7 +713,7 @@
       </div>
       <div style="flex:1" onclick="event.stopPropagation()">
         <div id="onboard-title" style="font-size:14px;font-weight:500;line-height:1.3;color:#1a1a1a;font-family:Georgia,serif">Start Career Readiness tracking.</div>
-        <div id="onboard-desc" style="font-size:12px;color:#888884;margin-top:6px;line-height:1.5;display:none;font-family:Georgia,serif">
+        <div id="onboard-desc" style="font-size:12px;color:#888884;margin-top:6px;line-height:1.5;display:none;font-family:Georgia,serif;text-align:left">
           Welcome to the first step in your Career Readiness journey! Follow these tasks geared to each year in school. Start with the 1st Year to build foundational skills for your professional practice!
         </div>
       </div>
@@ -753,9 +758,7 @@
   </div>
   <div class="splash-ring-wrap">
     <svg id="splash-ring-svg" viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div id="splash-title-overlay" class="splash-title-overlay">
-      RISD CAREER<br>READINESS<br>PROGRESS
-    </div>
+
   </div>
   <div class="splash-year-tabs" id="splash-year-tabs"></div>
   <div id="splash-hint" style="opacity:0;transition:none;font-family:Georgia,serif;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;padding:14px 24px 0;pointer-events:none">(Click a Year button to see career tasks.)</div>
@@ -763,7 +766,7 @@
 
 <!-- MAIN STUDENT APP -->
 <div id="student-screen" class="screen">
-  <div class="splash-header" style="position:sticky;top:0;z-index:10;background:#111;border-bottom:1px solid rgba(255,255,255,0.08)">
+  <div class="splash-header" style="position:sticky;top:0;z-index:10;background:#111;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:20px">
     <button onclick="switchTab('splash')" style="background:none;border:none;padding:4px;cursor:pointer;color:rgba(255,255,255,0.5);display:flex;align-items:center;flex-shrink:0" aria-label="Back to overview">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 15l-5-5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -911,6 +914,41 @@
 
 
 
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;align-items:center;justify-content:center;flex-direction:column">
+  <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" style="animation:spin 0.8s linear infinite">
+    <defs>
+      <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="#fd9a1a"/>
+        <stop offset="25%"  stop-color="#f1369f"/>
+        <stop offset="50%"  stop-color="#5deaff"/>
+        <stop offset="75%"  stop-color="#bdf452"/>
+        <stop offset="100%" stop-color="#fd9a1a"/>
+      </linearGradient>
+    </defs>
+    <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="5"/>
+    <path d="M28 6 A22 22 0 0 1 50 28" fill="none" stroke="url(#rainbow)" stroke-width="5" stroke-linecap="round"/>
+  </svg>
+</div>
+
+<!-- IDLE TASK PROMPT -->
+<div id="idle-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:center;justify-content:center;padding:24px">
+  <div style="background:#1a1a1a;border-radius:20px;max-width:340px;width:100%;position:relative;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.6)">
+
+    <!-- Close button -->
+    <button onclick="closeIdleModal()" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;-webkit-tap-highlight-color:transparent">✕</button>
+
+    <!-- Content -->
+    <div style="padding:28px 24px 24px">
+      <div style="font-size:18px;font-weight:600;font-family:Georgia,serif;color:white;margin-bottom:14px">What will you work on next?</div>
+      <div id="idle-year-badge" style="font-size:11px;font-weight:600;font-family:Georgia,serif;text-transform:uppercase;letter-spacing:0.08em;opacity:0.7;margin-bottom:10px;color:white"></div>
+      <div id="idle-task-title" style="font-size:17px;font-weight:600;font-family:Georgia,serif;color:white;line-height:1.4;margin-bottom:10px"></div>
+      <div id="idle-task-desc" style="font-size:13px;font-family:Georgia,serif;color:rgba(255,255,255,0.7);line-height:1.6"></div>
+
+    </div>
+  </div>
+</div>
+
 <!-- SIGNOUT MODAL -->
 <div class="modal-bg" id="signout-modal">
   <div class="modal">
@@ -959,9 +997,9 @@ const CONFIG = {
    ════════════════════════════════════════════════ */
 const YEAR_COLORS = {
   1: { bg: '#fd9a1a', text: '#1a1a1a', tabActive: '#1a1a1a' },
-  2: { bg: '#5deaff', text: '#1a1a1a', tabActive: '#1a1a1a' },
+  2: { bg: '#5deaff', darkBg: '#45afbf', text: '#1a1a1a', tabActive: '#1a1a1a' },
   3: { bg: '#f1369f', text: '#1a1a1a', tabActive: '#1a1a1a' },
-  4: { bg: '#bdf452', text: '#1a1a1a', tabActive: '#1a1a1a' },
+  4: { bg: '#bdf452', darkBg: '#8db73d', text: '#1a1a1a', tabActive: '#1a1a1a' },
 };
 
 const ONBOARD_TASK_ID = '1-onboard-1';
@@ -1000,7 +1038,7 @@ const CHECKLIST = {
     ]
   },
   2: {
-    label: "2nd Year",
+    label: "Sophomore",
     subtitle: "Create",
     seasons: [
       { name: "Fall", items: [
@@ -1036,7 +1074,7 @@ const CHECKLIST = {
     ]
   },
   3: {
-    label: "3rd Year",
+    label: "Junior",
     subtitle: "Build",
     seasons: [
       { name: "Fall", items: [
@@ -1078,7 +1116,7 @@ const CHECKLIST = {
     ]
   },
   4: {
-    label: "4th Year",
+    label: "Senior",
     subtitle: "Launch",
     seasons: [
       { name: "Fall", items: [
@@ -1131,6 +1169,15 @@ let adminViewEmail = null;
 /* ════════════════════════════════════════════════
    BANNER
    ════════════════════════════════════════════════ */
+function showLoadingOverlay() {
+  const el = document.getElementById('loading-overlay');
+  if (el) { el.style.display = 'flex'; }
+}
+function hideLoadingOverlay() {
+  const el = document.getElementById('loading-overlay');
+  if (el) { el.style.display = 'none'; }
+}
+
 function dismissBanner() {
   document.getElementById('config-banner').style.display = 'none';
 }
@@ -1252,10 +1299,10 @@ function showScreen(id) {
   // Always scroll the newly shown screen to top
   screen.scrollTop = 0;
   window.scrollTo(0, 0);
+  // Hide loading overlay once a screen is ready
+  hideLoadingOverlay();
   // Hide splash overlay whenever we're not on the splash screen
   if (id !== 'splash-screen') {
-    const overlay = document.getElementById('splash-title-overlay');
-    if (overlay) { clearTimeout(window._splashFadeTimer); overlay.style.transition = 'none'; overlay.style.opacity = '0'; }
     const hint = document.getElementById('splash-hint');
     if (hint) { clearTimeout(window._splashHintTimer); hint.style.animation = 'none'; hint.style.opacity = '0'; }
     // Cancel ring segment animations
@@ -1398,17 +1445,7 @@ function drawConcentricRings() {
   dot.setAttribute('r', 22); dot.setAttribute('fill', '#111');
   svg.appendChild(dot);
 
-  // Title overlay: snap visible, then fade out after 2s — only on splash screen
-  const overlay = document.getElementById('splash-title-overlay');
-  if (overlay && document.getElementById('splash-screen').classList.contains('active')) {
-    clearTimeout(window._splashFadeTimer);
-    overlay.style.transition = 'none';
-    overlay.style.opacity = '1';
-    window._splashFadeTimer = setTimeout(() => {
-      overlay.style.transition = 'opacity 0.8s ease';
-      overlay.style.opacity = '0';
-    }, 2000);
-  }
+
 
   // Arc text around outside of 4th ring
   const existingArc = svg.getElementById('ring-arc-text');
@@ -1469,70 +1506,62 @@ function drawConcentricRings() {
 window._ringAnimTimers = window._ringAnimTimers || [];
 
 function animateSplashRings() {
-  // Cancel any existing animations
   (window._ringAnimTimers || []).forEach(t => clearTimeout(t));
   window._ringAnimTimers = [];
 
   const svg = document.getElementById('splash-ring-svg');
   if (!svg) return;
 
-  // Each ring's paths are in a <g> element, one per band
-  // Bands drawn in order: year 4, 3, 2, 1 (outermost first)
   const groups = svg.querySelectorAll('g');
   if (!groups.length) return;
 
-  // Map groups back to years (drawn order: 4,3,2,1)
   const yearOrder = [4, 3, 2, 1];
-
-  // Different step intervals per ring for visual variety
   const intervals = { 1: 360, 2: 480, 3: 620, 4: 280 };
 
   groups.forEach((g, gi) => {
     const year = yearOrder[gi];
     const c = YEAR_COLORS[year];
     const yearColor = c.bg;
-    const allItems = CHECKLIST[year].seasons.flatMap(s => s.items);
     const paths = Array.from(g.querySelectorAll('path'));
-
-    // Only animate unchecked segments (transparent fill)
     const unchecked = paths.filter(p => p.getAttribute('fill') === 'transparent');
-    if (!unchecked.length) return; // ring complete — skip
+    if (!unchecked.length) return;
 
     let idx = 0;
-    const stepInterval = intervals[year];
 
     function animateNext() {
       if (!document.getElementById('splash-screen').classList.contains('active')) return;
-
       const path = unchecked[idx];
-      if (!path) return;
 
-      // Flash to 50% gray
+      // Flash to black, fade back to year color
       path.style.transition = 'none';
-      path.setAttribute('stroke', 'white');
-
-      // Fade back to year color
+      path.setAttribute('stroke', '#111111');
       const t1 = setTimeout(() => {
         path.style.transition = 'stroke 0.5s ease';
         path.setAttribute('stroke', yearColor);
-        const t2 = setTimeout(() => {
-          path.style.transition = '';
-        }, 260);
+        const t2 = setTimeout(() => { path.style.transition = ''; }, 510);
         window._ringAnimTimers.push(t2);
       }, 160);
-
       window._ringAnimTimers.push(t1);
 
       idx = (idx + 1) % unchecked.length;
-      const t3 = setTimeout(animateNext, stepInterval);
+      const t3 = setTimeout(animateNext, intervals[year]);
       window._ringAnimTimers.push(t3);
     }
 
-    // Stagger ring starts slightly so they don't all begin together
-    const startDelay = gi * 60;
-    const t0 = setTimeout(animateNext, startDelay);
+    const t0 = setTimeout(animateNext, gi * 120);
     window._ringAnimTimers.push(t0);
   });
+}
+
+// (blendToBlack kept for potential future use)
+function blendToBlack(hex, factor) {
+  const h = hex.replace('#','');
+  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  const target = 0x11;
+  const nr = Math.round(r + (target-r)*factor);
+  const ng = Math.round(g + (target-g)*factor);
+  const nb = Math.round(b + (target-b)*factor);
+  return `rgb(${nr},${ng},${nb})`;
 }
 
 function showAdminLogin() { openModal('admin-modal'); }
@@ -1549,7 +1578,7 @@ function applyYearColor(y) {
   const overview = document.querySelector('.progress-overview');
   if (!overview) return;
   if (!document.getElementById('student-screen').classList.contains('active')) return;
-  overview.style.background = c.bg;
+  overview.style.background = c.darkBg || c.bg;
   overview.style.color = c.text;
   // Set CSS variable so done checklist items use the year color
   document.getElementById('student-screen').style.setProperty('--year-color', c.bg);
@@ -1891,6 +1920,7 @@ async function loadProgress(email) {
   }
   // Show onboarding on first login, splash thereafter
   switchTab('onboarding');
+  resetIdleTimer();
   // Set initial year color variable
   document.getElementById('student-screen').style.setProperty('--year-color', YEAR_COLORS[currentYear].bg);
   // Render checklist silently in background
@@ -2353,6 +2383,76 @@ function toggleOnboardDesc() {
   document.getElementById('onboard-desc').style.display = _onboardExpanded ? 'block' : 'none';
   document.getElementById('onboard-arrow').style.transform = _onboardExpanded ? 'rotate(90deg)' : '';
 }
+
+/* ════════════════════════════════════════════════
+   IDLE TASK PROMPT
+   Shows a random uncompleted task after 30s idle
+   ════════════════════════════════════════════════ */
+let _idleTimer = null;
+let _idleTask  = null;
+let _idleYear  = null;
+const IDLE_SECONDS = 30;
+
+function resetIdleTimer() {
+  clearTimeout(_idleTimer);
+  if (!currentUser) return; // not signed in
+  if (document.getElementById('idle-modal').style.display !== 'none') return;
+  _idleTimer = setTimeout(showIdlePrompt, IDLE_SECONDS * 1000);
+}
+
+function getCurrentSeason() {
+  const m = new Date().getMonth() + 1; // 1-12
+  if (m >= 6 && m <= 8)  return 'Summer';
+  if (m >= 9 && m <= 11) return 'Fall';
+  if (m === 12 || m <= 2) return 'Winter';
+  return 'Spring';
+}
+
+function showIdlePrompt() {
+  const season = getCurrentSeason();
+  // Collect uncompleted tasks from current season only, across all years
+  const candidates = [];
+  [1,2,3,4].forEach(y => {
+    CHECKLIST[y].seasons.forEach(s => {
+      if (s.name !== season) return;
+      s.items.forEach(item => {
+        if (!completedItems[item.id]) {
+          candidates.push({ year: y, season: s.name, item });
+        }
+      });
+    });
+  });
+  if (!candidates.length) return; // nothing left in current season
+
+  // Pick one at random
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  _idleTask = pick.item;
+  _idleYear = pick.year;
+
+  // Populate modal
+  const c = YEAR_COLORS[pick.year];
+  const d = CHECKLIST[pick.year];
+  document.getElementById('idle-year-badge').textContent = d.label + ' — ' + d.subtitle + ' · ' + pick.season;
+  document.getElementById('idle-year-badge').style.color = c.bg;
+  document.getElementById('idle-task-title').textContent = pick.item.title;
+  document.getElementById('idle-task-desc').textContent  = pick.item.desc;
+
+  // Show
+  const modal = document.getElementById('idle-modal');
+  modal.style.display = 'flex';
+}
+
+function closeIdleModal() {
+  document.getElementById('idle-modal').style.display = 'none';
+  _idleTask = null;
+  _idleYear = null;
+  resetIdleTimer();
+}
+
+// Attach idle reset to user interactions
+['touchstart','touchend','click','keydown','scroll'].forEach(evt => {
+  document.addEventListener(evt, resetIdleTimer, { passive: true });
+});
 
 /* ════════════════════════════════════════════════
    INIT
