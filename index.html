@@ -1303,21 +1303,19 @@ function showScreen(id) {
   window.scrollTo(0, 0);
   // Hide loading overlay once a screen is ready
   hideLoadingOverlay();
-  // Hide splash overlay whenever we're not on the splash screen
+  // Hide splash hint + cancel ring animations for screens we're leaving.
+  // Cancellation uses generation tokens: bumping the counter makes any
+  // pending timer callbacks no-op, with no per-tick bookkeeping to leak.
   if (id !== 'splash-screen') {
     const hint = document.getElementById('splash-hint');
     if (hint) { clearTimeout(window._splashHintTimer); hint.style.animation = 'none'; hint.style.opacity = '0'; }
-    // Cancel ring segment animations
-    (window._ringAnimTimers || []).forEach(t => clearTimeout(t));
-    window._ringAnimTimers = [];
+    window._splashAnimGen = (window._splashAnimGen || 0) + 1;
   }
   if (id !== 'student-screen') {
-    (window._yearRingAnimTimers || []).forEach(t => clearTimeout(t));
-    window._yearRingAnimTimers = [];
+    window._yearAnimGen = (window._yearAnimGen || 0) + 1;
   }
   if (id !== 'onboarding-screen') {
-    (window._onboardRingAnimTimers || []).forEach(t => clearTimeout(t));
-    window._onboardRingAnimTimers = [];
+    window._onboardAnimGen = (window._onboardAnimGen || 0) + 1;
   }
 }
 
@@ -1531,11 +1529,10 @@ function drawConcentricRings() {
    on each ring simultaneously at different rates.
    ════════════════════════════════════════════════ */
 // Store active animation timers so we can cancel on navigation
-window._ringAnimTimers = window._ringAnimTimers || [];
+window._splashAnimGen = window._splashAnimGen || 0;
 
 function animateSplashRings() {
-  (window._ringAnimTimers || []).forEach(t => clearTimeout(t));
-  window._ringAnimTimers = [];
+  const gen = ++window._splashAnimGen; // invalidates any previous run
 
   const svg = document.getElementById('splash-ring-svg');
   if (!svg) return;
@@ -1548,36 +1545,33 @@ function animateSplashRings() {
 
   groups.forEach((g, gi) => {
     const year = yearOrder[gi];
-    const c = YEAR_COLORS[year];
-    const yearColor = c.bg;
-    const paths = Array.from(g.querySelectorAll('path'));
-    const unchecked = paths.filter(p => p.getAttribute('fill') === 'transparent');
+    const yearColor = YEAR_COLORS[year].bg;
+    const unchecked = Array.from(g.querySelectorAll('path'))
+      .filter(p => p.getAttribute('fill') === 'transparent');
     if (!unchecked.length) return;
 
     let idx = 0;
 
     function animateNext() {
+      if (gen !== window._splashAnimGen) return; // cancelled or restarted
       if (!document.getElementById('splash-screen').classList.contains('active')) return;
       const path = unchecked[idx];
 
       // Flash to black, fade back to year color
       path.style.transition = 'none';
       path.setAttribute('stroke', '#111111');
-      const t1 = setTimeout(() => {
+      setTimeout(() => {
+        if (gen !== window._splashAnimGen) return;
         path.style.transition = 'stroke 0.5s ease';
         path.setAttribute('stroke', yearColor);
-        const t2 = setTimeout(() => { path.style.transition = ''; }, 510);
-        window._ringAnimTimers.push(t2);
+        setTimeout(() => { path.style.transition = ''; }, 510);
       }, 160);
-      window._ringAnimTimers.push(t1);
 
       idx = (idx + 1) % unchecked.length;
-      const t3 = setTimeout(animateNext, intervals[year]);
-      window._ringAnimTimers.push(t3);
+      setTimeout(animateNext, intervals[year]);
     }
 
-    const t0 = setTimeout(animateNext, gi * 120);
-    window._ringAnimTimers.push(t0);
+    setTimeout(animateNext, gi * 120);
   });
 }
 
@@ -1794,44 +1788,41 @@ function updateProgress() {
    Same effect as the splash rings: one segment at a
    time flashes black, then fades back to white.
    ════════════════════════════════════════════════ */
-window._yearRingAnimTimers = window._yearRingAnimTimers || [];
+window._yearAnimGen = window._yearAnimGen || 0;
 
 function animateYearRing() {
-  (window._yearRingAnimTimers || []).forEach(t => clearTimeout(t));
-  window._yearRingAnimTimers = [];
+  const gen = ++window._yearAnimGen; // invalidates any previous run
 
   const svg = document.getElementById('progress-ring-svg');
   if (!svg) return;
 
-  const paths = Array.from(svg.querySelectorAll('path'));
-  const unchecked = paths.filter(p => p.getAttribute('fill') === 'transparent');
+  const unchecked = Array.from(svg.querySelectorAll('path'))
+    .filter(p => p.getAttribute('fill') === 'transparent');
   if (!unchecked.length) return; // ring complete — no animation
 
   const intervals = { 1: 360, 2: 480, 3: 620, 4: 280 };
   let idx = 0;
 
   function animateNext() {
+    if (gen !== window._yearAnimGen) return; // cancelled or restarted
     if (!document.getElementById('student-screen').classList.contains('active')) return;
     const path = unchecked[idx];
 
     // Flash to fully transparent (shows year-color bg), fade back to white
     path.style.transition = 'none';
     path.setAttribute('stroke-opacity', '0');
-    const t1 = setTimeout(() => {
+    setTimeout(() => {
+      if (gen !== window._yearAnimGen) return;
       path.style.transition = 'stroke-opacity 0.5s ease';
       path.setAttribute('stroke-opacity', '1');
-      const t2 = setTimeout(() => { path.style.transition = ''; }, 510);
-      window._yearRingAnimTimers.push(t2);
+      setTimeout(() => { path.style.transition = ''; }, 510);
     }, 160);
-    window._yearRingAnimTimers.push(t1);
 
     idx = (idx + 1) % unchecked.length;
-    const t3 = setTimeout(animateNext, intervals[currentYear] || 400);
-    window._yearRingAnimTimers.push(t3);
+    setTimeout(animateNext, intervals[currentYear] || 400);
   }
 
-  const t0 = setTimeout(animateNext, 200);
-  window._yearRingAnimTimers.push(t0);
+  setTimeout(animateNext, 200);
 }
 
 /* ════════════════════════════════════════════════
@@ -1903,8 +1894,9 @@ async function toggleItem(itemId, el) {
 
   el.classList.toggle('done', !wasChecked);
   updateProgress();
-  // Keep splash rings in sync
-  if (document.getElementById('splash-ring-svg')) drawConcentricRings();
+  // Keep splash rings in sync (only when actually visible;
+  // switchTab('splash') redraws on entry so hidden state can't go stale)
+  if (document.getElementById('splash-screen').classList.contains('active')) drawConcentricRings();
 
   try {
     await apiCall('setItem', { email, itemId, done: !wasChecked, byAdmin: isAdmin && !!adminViewEmail });
@@ -2426,44 +2418,41 @@ function drawOnboardRing() {
    Same effect as the splash rings: one segment at a
    time flashes black, then fades back to orange.
    ════════════════════════════════════════════════ */
-window._onboardRingAnimTimers = window._onboardRingAnimTimers || [];
+window._onboardAnimGen = window._onboardAnimGen || 0;
 
 function animateOnboardRing() {
-  (window._onboardRingAnimTimers || []).forEach(t => clearTimeout(t));
-  window._onboardRingAnimTimers = [];
+  const gen = ++window._onboardAnimGen; // invalidates any previous run
 
   const svg = document.getElementById('onboard-ring-svg');
   if (!svg) return;
 
   const yearColor = YEAR_COLORS[1].bg;
-  const paths = Array.from(svg.querySelectorAll('path'));
-  const unchecked = paths.filter(p => p.getAttribute('fill') === 'transparent');
+  const unchecked = Array.from(svg.querySelectorAll('path'))
+    .filter(p => p.getAttribute('fill') === 'transparent');
   if (!unchecked.length) return;
 
   let idx = 0;
 
   function animateNext() {
+    if (gen !== window._onboardAnimGen) return; // cancelled or restarted
     if (!document.getElementById('onboarding-screen').classList.contains('active')) return;
     const path = unchecked[idx];
 
     // Flash to black, fade back to year color
     path.style.transition = 'none';
     path.setAttribute('stroke', '#111111');
-    const t1 = setTimeout(() => {
+    setTimeout(() => {
+      if (gen !== window._onboardAnimGen) return;
       path.style.transition = 'stroke 0.5s ease';
       path.setAttribute('stroke', yearColor);
-      const t2 = setTimeout(() => { path.style.transition = ''; }, 510);
-      window._onboardRingAnimTimers.push(t2);
+      setTimeout(() => { path.style.transition = ''; }, 510);
     }, 160);
-    window._onboardRingAnimTimers.push(t1);
 
     idx = (idx + 1) % unchecked.length;
-    const t3 = setTimeout(animateNext, 360);
-    window._onboardRingAnimTimers.push(t3);
+    setTimeout(animateNext, 360);
   }
 
-  const t0 = setTimeout(animateNext, 200);
-  window._onboardRingAnimTimers.push(t0);
+  setTimeout(animateNext, 200);
 }
 
 function toggleOnboardTask() {
@@ -2538,7 +2527,8 @@ const IDLE_SECONDS = 30;
 function resetIdleTimer() {
   clearTimeout(_idleTimer);
   if (!currentUser) return; // not signed in
-  if (document.getElementById('idle-modal').style.display !== 'none') return;
+  const modal = document.getElementById('idle-modal');
+  if (modal && modal.style.display !== 'none') return; // prompt already open
   _idleTimer = setTimeout(showIdlePrompt, IDLE_SECONDS * 1000);
 }
 
