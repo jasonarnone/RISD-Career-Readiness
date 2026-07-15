@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>RISD Career Readiness</title>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@1,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,700&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -168,7 +168,7 @@
   .progress-overview {
     flex-shrink: 0;
     background: #fd9a1a;
-    padding: 20px 20px 24px;
+    padding: 12px 20px 16px;
     color: #1a1a1a;
     transition: background 0.3s ease;
     display: flex;
@@ -183,8 +183,8 @@
   }
   .progress-ring-wrap {
     position: relative;
-    width: 200px; height: 200px;
-    margin: 12px 0 16px;
+    width: 130px; height: 130px;
+    margin: 8px 0 10px;
     flex-shrink: 0;
   }
   .progress-ring-wrap svg {
@@ -204,10 +204,11 @@
     gap: 1px;
   }
   .ring-count {
-    font-size: 64px;
+    font-size: 48px;
     font-weight: 700;
     line-height: 1;
     color: white;
+    font-family: 'Roboto', sans-serif;
   }
   .ring-total {
     font-size: 13px;
@@ -761,7 +762,7 @@
 
   </div>
   <div class="splash-year-tabs" id="splash-year-tabs"></div>
-  <div id="splash-hint" style="opacity:0;transition:none;font-family:Georgia,serif;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;padding:14px 24px 0;pointer-events:none">(Click a Year button to see career tasks.)</div>
+  <div id="splash-hint" style="opacity:0;transition:none;font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;padding:14px 24px 0;pointer-events:none">(Click a Year button to see career tasks.)</div>
 </div>
 
 <!-- MAIN STUDENT APP -->
@@ -1202,6 +1203,7 @@ function demoSignIn() {
     return;
   }
   const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  showLoadingOverlay();
   signInUser(email, name, null);
 }
 
@@ -1309,6 +1311,14 @@ function showScreen(id) {
     (window._ringAnimTimers || []).forEach(t => clearTimeout(t));
     window._ringAnimTimers = [];
   }
+  if (id !== 'student-screen') {
+    (window._yearRingAnimTimers || []).forEach(t => clearTimeout(t));
+    window._yearRingAnimTimers = [];
+  }
+  if (id !== 'onboarding-screen') {
+    (window._onboardRingAnimTimers || []).forEach(t => clearTimeout(t));
+    window._onboardRingAnimTimers = [];
+  }
 }
 
 /* ════════════════════════════════════════════════
@@ -1338,10 +1348,28 @@ function buildSplashTabs() {
     const done = all.filter(i => completedItems[i.id]).length;
     const btn = document.createElement('button');
     btn.className = 'splash-year-btn';
-    btn.style.background   = c.bg;
-    btn.style.borderColor  = c.bg;
-    btn.style.color        = c.text;
-    btn.innerHTML = d.label;
+    if (done === all.length && all.length > 0) {
+      // Completed: ring + star graphic in the year color
+      btn.style.background = 'transparent';
+      btn.style.border = 'none';
+      btn.setAttribute('aria-label', d.label + ' — complete');
+      const n = all.length;
+      const r = 38;
+      const circ = 2 * Math.PI * r;
+      const dash = Math.max(1, circ / n - 2);
+      btn.innerHTML =
+        '<svg viewBox="0 0 100 100" width="68" height="68" xmlns="http://www.w3.org/2000/svg" ' +
+        'style="animation:ringRotate 23s linear infinite;transform-origin:50% 50%">' +
+        '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + c.bg + '" stroke-width="13" ' +
+        'stroke-dasharray="' + dash.toFixed(2) + ' 2" transform="rotate(-90 50 50)"/>' +
+        '<path d="' + makeStarPath(50, 50, 23) + '" fill="' + c.bg + '"/>' +
+        '</svg>';
+    } else {
+      btn.style.background   = c.bg;
+      btn.style.borderColor  = c.bg;
+      btn.style.color        = c.text;
+      btn.innerHTML = d.label;
+    }
     btn.onclick = () => {
       currentYear = y;
       applyYearColor(y);
@@ -1470,7 +1498,7 @@ function drawConcentricRings() {
     const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     textEl.setAttribute('id', 'ring-arc-text');
     textEl.setAttribute('font-family', 'Georgia, serif');
-    textEl.setAttribute('font-size', '11');
+    textEl.setAttribute('font-size', '12');
     textEl.setAttribute('fill', 'rgba(255,255,255,0.4)');
     textEl.setAttribute('letter-spacing', '0.5');
     const tp = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
@@ -1551,6 +1579,18 @@ function animateSplashRings() {
     const t0 = setTimeout(animateNext, gi * 120);
     window._ringAnimTimers.push(t0);
   });
+}
+
+// 5-point star path centered at (cx,cy); outerR = tip radius
+function makeStarPath(cx, cy, outerR) {
+  const innerR = outerR * 0.4;
+  const pts = [];
+  for (let i = 0; i < 10; i++) {
+    const r = (i % 2 === 0) ? outerR : innerR;
+    const a = (-90 + i * 36) * Math.PI / 180;
+    pts.push((cx + r * Math.cos(a)).toFixed(2) + ' ' + (cy + r * Math.sin(a)).toFixed(2));
+  }
+  return 'M ' + pts.join(' L ') + ' Z';
 }
 
 // (blendToBlack kept for potential future use)
@@ -1695,14 +1735,20 @@ function updateProgress() {
     svg.style.animation = 'ringRotate 23s linear infinite';
     svg.style.transformOrigin = '50% 50%';
 
-    // Show DONE in center (outside SVG so it stays static)
-    countEl.classList.remove('hidden');
+    // Hide count text; the star is the completion mark
+    countEl.classList.add('hidden');
     totalEl.classList.add('hidden');
     completeEl.classList.remove('visible');
     completeEl.style.display = 'none';
-    countEl.textContent = '✅';
-    countEl.style.fontSize = '72px';
-    countEl.style.letterSpacing = '0';
+
+    // 5-point star in the year color, centered with breathing room inside the ring
+    const star = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    star.setAttribute('d', makeStarPath(100, 100, 44));
+    star.setAttribute('fill', '#111111');
+    star.setAttribute('stroke', 'white');
+    star.setAttribute('stroke-width', '1');
+    star.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(star);
 
     const ringYearLbl = document.getElementById('ring-year-label');
     if (ringYearLbl) ringYearLbl.textContent = yearData.label + ' — ' + yearData.subtitle;
@@ -1738,6 +1784,54 @@ function updateProgress() {
     });
     svg.appendChild(segGroup);
   }
+
+  // Start highlight animation on the year ring
+  animateYearRing();
+}
+
+/* ════════════════════════════════════════════════
+   YEAR RING HIGHLIGHT ANIMATION
+   Same effect as the splash rings: one segment at a
+   time flashes black, then fades back to white.
+   ════════════════════════════════════════════════ */
+window._yearRingAnimTimers = window._yearRingAnimTimers || [];
+
+function animateYearRing() {
+  (window._yearRingAnimTimers || []).forEach(t => clearTimeout(t));
+  window._yearRingAnimTimers = [];
+
+  const svg = document.getElementById('progress-ring-svg');
+  if (!svg) return;
+
+  const paths = Array.from(svg.querySelectorAll('path'));
+  const unchecked = paths.filter(p => p.getAttribute('fill') === 'transparent');
+  if (!unchecked.length) return; // ring complete — no animation
+
+  const intervals = { 1: 360, 2: 480, 3: 620, 4: 280 };
+  let idx = 0;
+
+  function animateNext() {
+    if (!document.getElementById('student-screen').classList.contains('active')) return;
+    const path = unchecked[idx];
+
+    // Flash to fully transparent (shows year-color bg), fade back to white
+    path.style.transition = 'none';
+    path.setAttribute('stroke-opacity', '0');
+    const t1 = setTimeout(() => {
+      path.style.transition = 'stroke-opacity 0.5s ease';
+      path.setAttribute('stroke-opacity', '1');
+      const t2 = setTimeout(() => { path.style.transition = ''; }, 510);
+      window._yearRingAnimTimers.push(t2);
+    }, 160);
+    window._yearRingAnimTimers.push(t1);
+
+    idx = (idx + 1) % unchecked.length;
+    const t3 = setTimeout(animateNext, intervals[currentYear] || 400);
+    window._yearRingAnimTimers.push(t3);
+  }
+
+  const t0 = setTimeout(animateNext, 200);
+  window._yearRingAnimTimers.push(t0);
 }
 
 /* ════════════════════════════════════════════════
@@ -2322,6 +2416,54 @@ function drawOnboardRing() {
   });
 
   svg.appendChild(g);
+
+  // Start highlight animation (same as splash rings)
+  animateOnboardRing();
+}
+
+/* ════════════════════════════════════════════════
+   ONBOARDING RING HIGHLIGHT ANIMATION
+   Same effect as the splash rings: one segment at a
+   time flashes black, then fades back to orange.
+   ════════════════════════════════════════════════ */
+window._onboardRingAnimTimers = window._onboardRingAnimTimers || [];
+
+function animateOnboardRing() {
+  (window._onboardRingAnimTimers || []).forEach(t => clearTimeout(t));
+  window._onboardRingAnimTimers = [];
+
+  const svg = document.getElementById('onboard-ring-svg');
+  if (!svg) return;
+
+  const yearColor = YEAR_COLORS[1].bg;
+  const paths = Array.from(svg.querySelectorAll('path'));
+  const unchecked = paths.filter(p => p.getAttribute('fill') === 'transparent');
+  if (!unchecked.length) return;
+
+  let idx = 0;
+
+  function animateNext() {
+    if (!document.getElementById('onboarding-screen').classList.contains('active')) return;
+    const path = unchecked[idx];
+
+    // Flash to black, fade back to year color
+    path.style.transition = 'none';
+    path.setAttribute('stroke', '#111111');
+    const t1 = setTimeout(() => {
+      path.style.transition = 'stroke 0.5s ease';
+      path.setAttribute('stroke', yearColor);
+      const t2 = setTimeout(() => { path.style.transition = ''; }, 510);
+      window._onboardRingAnimTimers.push(t2);
+    }, 160);
+    window._onboardRingAnimTimers.push(t1);
+
+    idx = (idx + 1) % unchecked.length;
+    const t3 = setTimeout(animateNext, 360);
+    window._onboardRingAnimTimers.push(t3);
+  }
+
+  const t0 = setTimeout(animateNext, 200);
+  window._onboardRingAnimTimers.push(t0);
 }
 
 function toggleOnboardTask() {
@@ -2449,9 +2591,19 @@ function closeIdleModal() {
   resetIdleTimer();
 }
 
-// Attach idle reset to user interactions
-['touchstart','touchend','click','keydown','scroll'].forEach(evt => {
-  document.addEventListener(evt, resetIdleTimer, { passive: true });
+// Attach idle reset to user interactions.
+// capture:true is required so scrolls of inner containers (e.g. the
+// checklist body) are detected — scroll events do not bubble.
+// Movement events are throttled so they don't hammer the timer.
+let _idleThrottle = 0;
+function onUserActivity() {
+  const now = Date.now();
+  if (now - _idleThrottle < 500) return;
+  _idleThrottle = now;
+  resetIdleTimer();
+}
+['touchstart','touchend','touchmove','click','keydown','scroll','wheel','mousemove','pointerdown'].forEach(evt => {
+  document.addEventListener(evt, onUserActivity, { passive: true, capture: true });
 });
 
 /* ════════════════════════════════════════════════
