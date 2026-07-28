@@ -610,6 +610,13 @@
   .setup-field input:focus, .setup-field textarea:focus { border-color: var(--risd-red-muted); }
   .setup-field textarea { resize: vertical; min-height: 80px; font-size: 12px; }
 
+  @keyframes onboardPulse {
+    0%, 100% { background-color: #ffffff; }
+    50%      { background-color: #fd9a1a; }
+  }
+  #onboard-task.pulse-attn {
+    animation: onboardPulse 1.6s ease-in-out infinite;
+  }
   @keyframes spin {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
@@ -695,10 +702,11 @@
 </svg></div>
     <h2>Career Readiness</h2>
 
-    <!-- Instructional text -->
-    <p style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.7;margin-bottom:20px;text-align:left">
-      This is a Career Task button. Expand the task to the right to read the full task description. Check the box on the left to mark as completed. Each completed task brings you one step closer to closing your Career Readiness rings!
-    </p>
+    <!-- Personalized welcome -->
+    <p id="onboard-welcome" style="font-size:16px;font-weight:600;color:white;margin-bottom:12px">Welcome!</p>
+
+    <!-- Upper-year note (hidden for first-year students) -->
+    <p id="onboard-group-msg" style="display:none;font-size:14px;color:rgba(255,255,255,0.8);line-height:1.7;margin-bottom:16px;text-align:left"></p>
 
     <!-- Mini Year 1 ring -->
     <div style="display:flex;justify-content:center;margin-bottom:16px">
@@ -706,7 +714,7 @@
     </div>
 
     <!-- Sample task button (Year 1 style) -->
-    <div id="onboard-task" style="background:white;border:1px solid #e2e0db;border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px" onclick="event.stopPropagation()">
+    <div id="onboard-task" class="pulse-attn" style="background:white;border:1px solid #e2e0db;border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px" onclick="event.stopPropagation()">
       <div id="onboard-check" onclick="event.stopPropagation();toggleOnboardTask()" style="width:22px;height:22px;border-radius:50%;border:1.5px solid #e2e0db;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:white;transition:all .15s;-webkit-tap-highlight-color:transparent">
         <svg id="onboard-check-svg" width="12" height="12" viewBox="0 0 12 12" fill="none" style="display:none">
           <path d="M2 6l3 3 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -725,9 +733,14 @@
       </button>
     </div>
 
-    <!-- CTA button -->
-    <button onclick="switchTab('splash')" style="width:100%;padding:13px;background:#fd9a1a;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:Georgia,serif;letter-spacing:0.01em;touch-action:manipulation;-webkit-tap-highlight-color:transparent;margin-top:8px">
-      Go to Your Dashboard
+    <!-- Instructional text -->
+    <p style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.7;margin-bottom:20px;text-align:left">
+      This is a Career Task button. Expand the task to the right to read the full task description. Check the box on the left to mark as completed. Each completed task brings you one step closer to closing your Career Readiness rings!
+    </p>
+
+    <!-- CTA button: enabled once the first task is checked -->
+    <button id="onboard-dashboard-btn" onclick="switchTab('splash')" disabled style="width:100%;padding:13px;background:#fd9a1a;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:Georgia,serif;letter-spacing:0.01em;touch-action:manipulation;-webkit-tap-highlight-color:transparent;margin-top:8px;opacity:0.5">
+      Your Dashboard
     </button>
 
   </div>
@@ -925,6 +938,17 @@
   </svg>
 </div>
 
+<!-- NOTICE MODAL (lock / unlock messages) -->
+<div id="notice-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:600;align-items:center;justify-content:center;padding:24px">
+  <div style="background:#1a1a1a;border-radius:20px;max-width:320px;width:100%;position:relative;box-shadow:0 24px 60px rgba(0,0,0,0.6)">
+    <button onclick="closeNotice()" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">✕</button>
+    <div style="padding:28px 24px 24px;text-align:center">
+      <div id="notice-icon" style="font-size:34px;margin-bottom:10px"></div>
+      <div id="notice-message" style="font-size:15px;font-family:Georgia,serif;color:white;line-height:1.5"></div>
+    </div>
+  </div>
+</div>
+
 <!-- IDLE TASK PROMPT -->
 <div id="idle-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:center;justify-content:center;padding:24px">
   <div style="background:#1a1a1a;border-radius:20px;max-width:340px;width:100%;position:relative;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.6)">
@@ -997,6 +1021,23 @@ const YEAR_COLORS = {
 };
 
 const ONBOARD_TASK_ID = '1-onboard-1';
+
+/* ════════════════════════════════════════════════
+   PROGRESSIVE UNLOCK
+   Year 1 is always available. Each later year
+   unlocks when the previous year is ≥ 60% done.
+   ════════════════════════════════════════════════ */
+const UNLOCK_PCT = 0.6;
+
+function yearPct(y) {
+  const all = CHECKLIST[y].seasons.flatMap(s => s.items);
+  if (!all.length) return 0;
+  return all.filter(i => completedItems[i.id]).length / all.length;
+}
+
+function isYearUnlocked(y) {
+  return y === 1 || yearPct(y - 1) >= UNLOCK_PCT;
+}
 
 const CHECKLIST = {
   1: {
@@ -1271,6 +1312,7 @@ function switchTab(tab) {
 
   if (tab === 'onboarding') {
     showScreen('onboarding-screen');
+    populateOnboarding();
     syncOnboardUI();
     drawOnboardRing();
   } else if (tab === 'splash') {
@@ -1339,6 +1381,22 @@ function buildSplashTabs() {
     const done = all.filter(i => completedItems[i.id]).length;
     const btn = document.createElement('button');
     btn.className = 'splash-year-btn';
+    if (!isYearUnlocked(y)) {
+      // Locked: black padlock silhouette instead of the label
+      btn.style.background   = c.bg;
+      btn.style.borderColor  = c.bg;
+      btn.style.color        = c.text;
+      btn.innerHTML =
+        '<svg viewBox="0 0 24 24" width="44" height="44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        '<path fill="#111111" d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zM9 7c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7z"/>' +
+        '</svg>';
+      btn.setAttribute('aria-label', d.label + ' — locked');
+      btn.onclick = () => {
+        showNotice('🔒', 'Complete 60% of ' + CHECKLIST[y - 1].label + ' to unlock the next year!');
+      };
+      container.appendChild(btn);
+      return;
+    }
     if (done === all.length && all.length > 0) {
       // Completed: ring + star graphic in the year color
       btn.style.background = 'transparent';
@@ -1430,7 +1488,17 @@ function drawConcentricRings() {
     const segDeg  = (360 / total) - gap;
     const allDone = all.every(i => completedItems[i.id]);
 
-    if (allDone) {
+    if (!isYearUnlocked(year)) {
+      // Locked: a single simple outline ring — no segments, no animation
+      const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      ring.setAttribute('cx', cx); ring.setAttribute('cy', cy);
+      ring.setAttribute('r', (outerR + innerR) / 2);
+      ring.setAttribute('fill', 'none');
+      ring.setAttribute('stroke', c.bg);
+      ring.setAttribute('stroke-width', '2');
+      ring.setAttribute('opacity', '0.45');
+      svg.appendChild(ring);
+    } else if (allDone) {
       const outer = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       outer.setAttribute('cx', cx); outer.setAttribute('cy', cy);
       outer.setAttribute('r', outerR); outer.setAttribute('fill', c.bg);
@@ -1441,6 +1509,7 @@ function drawConcentricRings() {
       svg.appendChild(inner);
     } else {
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('data-year', year);
       g.setAttribute('transform', `rotate(-90, ${cx}, ${cy})`);
       all.forEach((item, i) => {
         const isDone   = !!completedItems[item.id];
@@ -1530,14 +1599,15 @@ function animateSplashRings() {
   const svg = document.getElementById('splash-ring-svg');
   if (!svg) return;
 
-  const groups = svg.querySelectorAll('g');
+  // Groups are tagged with data-year: positional mapping would break
+  // when completed or locked years draw no segment group at all.
+  const groups = svg.querySelectorAll('g[data-year]');
   if (!groups.length) return;
 
-  const yearOrder = [4, 3, 2, 1];
   const intervals = { 1: 360, 2: 480, 3: 620, 4: 280 };
 
   groups.forEach((g, gi) => {
-    const year = yearOrder[gi];
+    const year = parseInt(g.getAttribute('data-year'), 10);
     const yearColor = YEAR_COLORS[year].bg;
     const unchecked = Array.from(g.querySelectorAll('path'))
       .filter(p => p.getAttribute('fill') === 'transparent');
@@ -1878,6 +1948,9 @@ async function toggleItem(itemId, el) {
   const email = adminViewEmail || currentUser?.email;
   if (!email) return;
 
+  // Snapshot unlock state before the change so we can detect transitions
+  const unlockedBefore = { 2: isYearUnlocked(2), 3: isYearUnlocked(3), 4: isYearUnlocked(4) };
+
   completedItems[itemId] = !wasChecked;
   if (!wasChecked && isAdmin && adminViewEmail) {
     completedItems[itemId + '_by_admin'] = true;
@@ -1887,9 +1960,22 @@ async function toggleItem(itemId, el) {
 
   el.classList.toggle('done', !wasChecked);
   updateProgress();
-  // Keep splash rings in sync (only when actually visible;
+  // Celebrate newly unlocked years (checking only, never on uncheck)
+  if (!wasChecked) {
+    for (const y of [2, 3, 4]) {
+      if (!unlockedBefore[y] && isYearUnlocked(y)) {
+        showNotice('🎉', 'You unlocked ' + CHECKLIST[y].label + '!');
+        break;
+      }
+    }
+  }
+
+  // Keep splash rings + buttons in sync (only when actually visible;
   // switchTab('splash') redraws on entry so hidden state can't go stale)
-  if (document.getElementById('splash-screen').classList.contains('active')) drawConcentricRings();
+  if (document.getElementById('splash-screen').classList.contains('active')) {
+    drawConcentricRings();
+    buildSplashTabs();
+  }
 
   try {
     await apiCall('setItem', { email, itemId, done: !wasChecked, byAdmin: isAdmin && !!adminViewEmail });
@@ -1986,12 +2072,14 @@ async function loadProgress(email) {
         `<strong>${p['First Name'] || ''} ${p['Last Name'] || ''}</strong><br>
          ${email}<br>
          <span style="font-size:12px;color:var(--text-3)">${[p['Student Group'], p['Major'], p['Grad Year'] ? 'Class of ' + p['Grad Year'] : ''].filter(Boolean).join(' · ')}</span>`;
+      window._studentProfile = p;
       updateSplashProfile(p);
     } else {
       // fallback: use email prefix formatted as name
       const emailPrefix = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       const greetEl2 = document.getElementById('student-greeting');
       if (greetEl2) { greetEl2.textContent = emailPrefix; greetEl2.style.color = 'white'; }
+      window._studentProfile = { 'First Name': emailPrefix };
       updateSplashProfile({ 'First Name': emailPrefix });
     }
   } catch(e) {
@@ -2476,14 +2564,47 @@ function toggleOnboardTask() {
   updateProgress();
 }
 
+function populateOnboarding() {
+  const p = window._studentProfile || {};
+  const firstName = p['First Name'] || '';
+  const group = p['Student Group'] || '';
+
+  const welcomeEl = document.getElementById('onboard-welcome');
+  if (welcomeEl) welcomeEl.textContent = firstName ? ('Welcome ' + firstName + '!') : 'Welcome!';
+
+  // Upper-year note: shown for Sophomore / Junior / Senior, hidden for first-years
+  const msgEl = document.getElementById('onboard-group-msg');
+  if (msgEl) {
+    const isUpperYear = group && !/first|1st|freshman/i.test(group);
+    if (isUpperYear) {
+      msgEl.textContent = 'Even though you are a ' + group + ', you are starting out with the First Year career tasks. The ring below fills up as you complete tasks.';
+      msgEl.style.display = 'block';
+    } else {
+      msgEl.style.display = 'none';
+    }
+  }
+
+  const dashBtn = document.getElementById('onboard-dashboard-btn');
+  if (dashBtn) dashBtn.textContent = firstName ? (firstName + "'s Dashboard") : 'Your Dashboard';
+}
+
 function syncOnboardUI() {
   const done = !!completedItems[ONBOARD_TASK_ID];
+
+  // Dashboard button: dimmed + unclickable until the first task is completed
+  const dashBtn = document.getElementById('onboard-dashboard-btn');
+  if (dashBtn) {
+    dashBtn.disabled = !done;
+    dashBtn.style.opacity = done ? '1' : '0.5';
+    dashBtn.style.cursor = done ? 'pointer' : 'default';
+  }
   const check = document.getElementById('onboard-check');
   const checkSvg = document.getElementById('onboard-check-svg');
   const task = document.getElementById('onboard-task');
   const title = document.getElementById('onboard-title');
   if (!check) return;
   if (done) {
+    task.classList.remove('pulse-attn');
     check.style.background = '#fd9a1a';
     check.style.borderColor = '#fd9a1a';
     if (checkSvg) checkSvg.style.display = 'block';
@@ -2492,6 +2613,7 @@ function syncOnboardUI() {
     title.style.textDecoration = 'line-through';
     title.style.color = '#fd9a1a';
   } else {
+    task.classList.add('pulse-attn');
     check.style.background = 'white';
     check.style.borderColor = '#e2e0db';
     if (checkSvg) checkSvg.style.display = 'none';
@@ -2506,6 +2628,22 @@ function toggleOnboardDesc() {
   _onboardExpanded = !_onboardExpanded;
   document.getElementById('onboard-desc').style.display = _onboardExpanded ? 'block' : 'none';
   document.getElementById('onboard-arrow').style.transform = _onboardExpanded ? 'rotate(90deg)' : '';
+}
+
+/* ════════════════════════════════════════════════
+   NOTICE MODAL
+   ════════════════════════════════════════════════ */
+function showNotice(icon, message) {
+  const modal = document.getElementById('notice-modal');
+  if (!modal) return;
+  document.getElementById('notice-icon').textContent = icon;
+  document.getElementById('notice-message').textContent = message;
+  modal.style.display = 'flex';
+}
+
+function closeNotice() {
+  const modal = document.getElementById('notice-modal');
+  if (modal) modal.style.display = 'none';
 }
 
 /* ════════════════════════════════════════════════
@@ -2537,7 +2675,7 @@ function showIdlePrompt() {
   const season = getCurrentSeason();
   // Collect uncompleted tasks from current season only, across all years
   const candidates = [];
-  [1,2,3,4].forEach(y => {
+  [1,2,3,4].filter(isYearUnlocked).forEach(y => {
     CHECKLIST[y].seasons.forEach(s => {
       if (s.name !== season) return;
       s.items.forEach(item => {
