@@ -617,6 +617,13 @@
   #onboard-task.pulse-attn {
     animation: onboardPulse 1.6s ease-in-out infinite;
   }
+  @keyframes onboardSegPulse {
+    0%, 100% { fill: #ffffff; }
+    50%      { fill: #fd9a1a; }
+  }
+  #onboard-seg.pulse-attn-fill {
+    animation: onboardSegPulse 1.6s ease-in-out infinite;
+  }
   @keyframes spin {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
@@ -1349,9 +1356,7 @@ function showScreen(id) {
   if (id !== 'student-screen') {
     window._yearAnimGen = (window._yearAnimGen || 0) + 1;
   }
-  if (id !== 'onboarding-screen') {
-    window._onboardAnimGen = (window._onboardAnimGen || 0) + 1;
-  }
+
 }
 
 /* ════════════════════════════════════════════════
@@ -2478,62 +2483,24 @@ function drawOnboardRing() {
     const endDeg = startDeg + segDeg;
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', makeArcPath(startDeg, endDeg, outerR, innerR));
-    // Onboard segment fills orange when done so student can see it clearly on black
-    // Other segments stay transparent (they'll complete later on the year screen)
+    // Onboard segment fills orange when done so student can see it clearly on black.
+    // While unchecked, it pulses white/orange in lockstep with the task button
+    // below, so the connection between the two is unmistakable.
+    // Other segments stay static (they complete later on the real year screen).
     path.setAttribute('fill', isOnboard && isDone ? c.bg : 'transparent');
     path.setAttribute('stroke', c.bg);
     path.setAttribute('stroke-width', isOnboard ? '2.5' : '1.5');
     path.setAttribute('opacity', isOnboard ? '1' : '0.5');
-    if (isOnboard) path.setAttribute('id', 'onboard-seg');
+    if (isOnboard) {
+      path.setAttribute('id', 'onboard-seg');
+      if (!isDone) path.classList.add('pulse-attn-fill');
+    }
     g.appendChild(path);
   });
 
   svg.appendChild(g);
-
-  // Start highlight animation (same as splash rings)
-  animateOnboardRing();
-}
-
-/* ════════════════════════════════════════════════
-   ONBOARDING RING HIGHLIGHT ANIMATION
-   Same effect as the splash rings: one segment at a
-   time flashes black, then fades back to orange.
-   ════════════════════════════════════════════════ */
-window._onboardAnimGen = window._onboardAnimGen || 0;
-
-function animateOnboardRing() {
-  const gen = ++window._onboardAnimGen; // invalidates any previous run
-
-  const svg = document.getElementById('onboard-ring-svg');
-  if (!svg) return;
-
-  const yearColor = YEAR_COLORS[1].bg;
-  const unchecked = Array.from(svg.querySelectorAll('path'))
-    .filter(p => p.getAttribute('fill') === 'transparent');
-  if (!unchecked.length) return;
-
-  let idx = 0;
-
-  function animateNext() {
-    if (gen !== window._onboardAnimGen) return; // cancelled or restarted
-    if (!document.getElementById('onboarding-screen').classList.contains('active')) return;
-    const path = unchecked[idx];
-
-    // Flash to black, fade back to year color
-    path.style.transition = 'none';
-    path.setAttribute('stroke', '#111111');
-    setTimeout(() => {
-      if (gen !== window._onboardAnimGen) return;
-      path.style.transition = 'stroke 0.5s ease';
-      path.setAttribute('stroke', yearColor);
-      setTimeout(() => { path.style.transition = ''; }, 510);
-    }, 160);
-
-    idx = (idx + 1) % unchecked.length;
-    setTimeout(animateNext, 360);
-  }
-
-  setTimeout(animateNext, 200);
+  // No segment-cycling animation on this screen — only the onboard
+  // segment's fill pulse (set above) draws attention here.
 }
 
 function toggleOnboardTask() {
@@ -2580,7 +2547,9 @@ function populateOnboarding() {
       msgEl.textContent = 'Even though you are a ' + group + ', you are starting out with the First Year career tasks. The ring below fills up as you complete tasks.';
       msgEl.style.display = 'block';
     } else {
-      msgEl.style.display = 'none';
+      // First-year students get a simpler pointer to the ring instead
+      msgEl.textContent = 'The ring below fills up as you complete tasks.';
+      msgEl.style.display = 'block';
     }
   }
 
