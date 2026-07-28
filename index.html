@@ -866,8 +866,12 @@
 
   <!-- TABS -->
   <div style="display:flex;border-bottom:1px solid var(--border);background:var(--surface)">
-    <button class="admin-tab active" id="tab-student" onclick="switchAdminTab('student')"
+    <button class="admin-tab active" id="tab-stats" onclick="switchAdminTab('stats')"
       style="flex:1;padding:11px;font-size:13px;font-family:Georgia,serif;border:none;background:none;cursor:pointer;border-bottom:2px solid var(--risd-red);color:var(--text);font-weight:600">
+      Statistics
+    </button>
+    <button class="admin-tab" id="tab-student" onclick="switchAdminTab('student')"
+      style="flex:1;padding:11px;font-size:13px;font-family:Georgia,serif;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-3)">
       Student lookup
     </button>
     <button class="admin-tab" id="tab-roster" onclick="switchAdminTab('roster')"
@@ -876,8 +880,43 @@
     </button>
   </div>
 
+  <!-- STATISTICS PANEL -->
+  <div id="admin-panel-stats">
+    <div style="padding:16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);display:block;margin-bottom:4px">Year in School</label>
+        <select id="stats-filter-year" onchange="renderAdminStats()"
+          style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:Georgia,serif;background:var(--bg);color:var(--text)">
+          <option value="all">All years</option>
+          <option value="1">1st Year</option>
+          <option value="2">Sophomore</option>
+          <option value="3">Junior</option>
+          <option value="4">Senior</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:140px">
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);display:block;margin-bottom:4px">Major</label>
+        <select id="stats-filter-major" onchange="renderAdminStats()"
+          style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:Georgia,serif;background:var(--bg);color:var(--text)">
+          <option value="all">All majors</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="stats-loading" style="padding:40px 16px;text-align:center;color:var(--text-3);font-size:14px">Loading statistics…</div>
+
+    <div id="stats-content" style="display:none;padding:16px">
+      <div id="stats-cards" style="display:flex;gap:12px;justify-content:space-around;flex-wrap:wrap;margin-bottom:8px"></div>
+      <div id="stats-empty" style="display:none;padding:24px;text-align:center;color:var(--text-3);font-size:13px">No student data matches these filters yet.</div>
+      <div id="stats-top-tasks-wrap" style="margin-top:16px">
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);margin-bottom:10px">Top 5 most popular tasks</div>
+        <div id="stats-top-tasks"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- STUDENT LOOKUP PANEL -->
-  <div id="admin-panel-student">
+  <div id="admin-panel-student" style="display:none">
     <div class="admin-search">
       <label>Look up a student</label>
       <div class="search-row">
@@ -1296,7 +1335,13 @@ async function signInUser(email, name, picture, profile = {}) {
      ${email}<br>
      <span style="font-size:12px;color:var(--text-3)">${[group, profile['Major'], profile['Grad Year'] ? 'Class of ' + profile['Grad Year'] : ''].filter(Boolean).join(' · ')}</span>`;
 
-  if (isAdmin) document.getElementById('nav-admin').style.display = 'flex';
+  if (isAdmin) {
+    // Admins skip the student onboarding/splash flow entirely and land
+    // directly on the admin panel (student lookup + roster import).
+    hideLoadingOverlay();
+    switchTab('admin');
+    return;
+  }
 
   await loadProgress(email);
 }
@@ -1333,6 +1378,7 @@ function switchTab(tab) {
   } else if (tab === 'admin') {
   
     showScreen('admin-screen');
+    switchAdminTab('stats');
   }
 }
 
@@ -2038,6 +2084,19 @@ async function apiCall(action, params = {}) {
       }
       return { ok: true };
     }
+    if (action === 'getAllStats') {
+      // Read-only aggregate stats always come from the real sheet, even in
+      // demo mode — matches getProgress's existing "real reads, fake writes" rule.
+      try {
+        const url = new URL(CONFIG.APPS_SCRIPT_URL);
+        url.searchParams.set('action', 'getAllStats');
+        const resp = await fetch(url.toString());
+        if (resp.ok) return resp.json();
+      } catch(e) {
+        console.warn('[Demo] getAllStats fetch failed:', e.message);
+      }
+      return { students: [] };
+    }
     if (action === 'updateProfile') return { ok: true };
     if (action === 'importRoster') {
       // Demo: just acknowledge
@@ -2212,15 +2271,187 @@ function viewStudentChecklist() {
    ADMIN TAB SWITCHING
    ════════════════════════════════════════════════ */
 function switchAdminTab(tab) {
-  const isStudent = tab === 'student';
-  document.getElementById('admin-panel-student').style.display = isStudent ? 'block' : 'none';
-  document.getElementById('admin-panel-roster').style.display  = isStudent ? 'none'  : 'block';
-  document.getElementById('tab-student').style.borderBottomColor = isStudent ? 'var(--risd-red)' : 'transparent';
-  document.getElementById('tab-student').style.color = isStudent ? 'var(--text)' : 'var(--text-3)';
-  document.getElementById('tab-student').style.fontWeight = isStudent ? '600' : '400';
-  document.getElementById('tab-roster').style.borderBottomColor = isStudent ? 'transparent' : 'var(--risd-red)';
-  document.getElementById('tab-roster').style.color = isStudent ? 'var(--text-3)' : 'var(--text)';
-  document.getElementById('tab-roster').style.fontWeight = isStudent ? '400' : '600';
+  const panels = { stats: 'admin-panel-stats', student: 'admin-panel-student', roster: 'admin-panel-roster' };
+  const tabIds = { stats: 'tab-stats', student: 'tab-student', roster: 'tab-roster' };
+  Object.keys(panels).forEach(key => {
+    const active = key === tab;
+    document.getElementById(panels[key]).style.display = active ? 'block' : 'none';
+    const t = document.getElementById(tabIds[key]);
+    t.style.borderBottomColor = active ? 'var(--risd-red)' : 'transparent';
+    t.style.color = active ? 'var(--text)' : 'var(--text-3)';
+    t.style.fontWeight = active ? '600' : '400';
+  });
+  if (tab === 'stats') {
+    // Fetch once per admin-screen visit; re-renders instantly on later tab clicks
+    if (window._adminStatsRaw) renderAdminStats(); else loadAdminStats();
+  }
+}
+
+/* ════════════════════════════════════════════════
+   ADMIN STATISTICS
+   ════════════════════════════════════════════════ */
+window._adminStatsRaw = null; // cached { students: [{profile, completed}] } from the last fetch
+let _taskIndex = null;        // lazily built map: taskId -> { label, year }
+
+function studentYearNumber(group) {
+  if (!group) return null;
+  const g = String(group).toLowerCase();
+  if (/senior/.test(g))             return 4;
+  if (/junior/.test(g))             return 3;
+  if (/sophomore/.test(g))          return 2;
+  if (/first|1st|freshman/.test(g)) return 1;
+  return null; // unrecognized group — excluded from year-specific stats
+}
+
+function buildTaskIndex() {
+  const idx = {};
+  [1,2,3,4].forEach(y => {
+    CHECKLIST[y].seasons.forEach(s => {
+      s.items.forEach(item => { idx[item.id] = { label: item.title, year: y }; });
+    });
+  });
+  return idx;
+}
+
+async function loadAdminStats() {
+  const loadingEl = document.getElementById('stats-loading');
+  const contentEl = document.getElementById('stats-content');
+  loadingEl.style.display = 'block';
+  loadingEl.textContent = 'Loading statistics…';
+  contentEl.style.display = 'none';
+
+  if (!_taskIndex) _taskIndex = buildTaskIndex();
+
+  try {
+    const data = await apiCall('getAllStats', {});
+    window._adminStatsRaw = data.students || [];
+    populateStatsFilters();
+    renderAdminStats();
+  } catch (e) {
+    loadingEl.textContent = 'Could not load statistics: ' + e.message;
+  }
+}
+
+function populateStatsFilters() {
+  const majors = new Set();
+  (window._adminStatsRaw || []).forEach(s => {
+    const m = ((s.profile || {})['Major'] || '').toString().trim();
+    if (m) majors.add(m);
+  });
+  const sel = document.getElementById('stats-filter-major');
+  const current = sel.value;
+  sel.innerHTML = '<option value="all">All majors</option>' +
+    Array.from(majors).sort().map(m =>
+      '<option value="' + m.replace(/"/g, '&quot;') + '">' + m + '</option>'
+    ).join('');
+  if (Array.from(sel.options).some(o => o.value === current)) sel.value = current;
+}
+
+function renderAdminStats() {
+  const raw = window._adminStatsRaw;
+  if (!raw) return;
+
+  document.getElementById('stats-loading').style.display = 'none';
+  document.getElementById('stats-content').style.display = 'block';
+
+  const yearFilter  = document.getElementById('stats-filter-year').value;
+  const majorFilter = document.getElementById('stats-filter-major').value;
+
+  const filtered = raw.filter(s => {
+    const p = s.profile || {};
+    if (majorFilter !== 'all' && (p['Major'] || '').toString().trim() !== majorFilter) return false;
+    if (yearFilter !== 'all') {
+      if (studentYearNumber(p['Student Group']) !== parseInt(yearFilter, 10)) return false;
+    }
+    return true;
+  });
+
+  const cardsEl = document.getElementById('stats-cards');
+  const tasksEl = document.getElementById('stats-top-tasks');
+  const emptyEl = document.getElementById('stats-empty');
+
+  if (!filtered.length) {
+    cardsEl.innerHTML = '';
+    tasksEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  const totalByYear = {};
+  [1,2,3,4].forEach(y => { totalByYear[y] = CHECKLIST[y].seasons.flatMap(s => s.items).length; });
+  const totalAllTasks = [1,2,3,4].reduce((sum, y) => sum + totalByYear[y], 0);
+
+  let participating = 0;
+  let sumAllPct = 0;
+  let yearKnownCount = 0;
+  let sumCurrentYearPct = 0;
+  const taskCounts = {};
+
+  filtered.forEach(s => {
+    const completed = s.completed || [];
+    if (completed.length > 0) participating++;
+    sumAllPct += completed.length / totalAllTasks;
+
+    const yn = studentYearNumber((s.profile || {})['Student Group']);
+    if (yn && totalByYear[yn]) {
+      const doneInYear = completed.filter(id => _taskIndex[id] && _taskIndex[id].year === yn).length;
+      sumCurrentYearPct += doneInYear / totalByYear[yn];
+      yearKnownCount++;
+    }
+
+    completed.forEach(id => { taskCounts[id] = (taskCounts[id] || 0) + 1; });
+  });
+
+  const pctParticipating = Math.round((participating / filtered.length) * 100);
+  const pctAllYears      = Math.round((sumAllPct / filtered.length) * 100);
+  const pctCurrentYear   = yearKnownCount ? Math.round((sumCurrentYearPct / yearKnownCount) * 100) : 0;
+
+  cardsEl.innerHTML = '';
+  cardsEl.appendChild(makeStatRingCard('Population participating', pctParticipating, filtered.length + ' students'));
+  cardsEl.appendChild(makeStatRingCard('Current year complete', pctCurrentYear, yearKnownCount + ' with known year'));
+  cardsEl.appendChild(makeStatRingCard('All years complete', pctAllYears, 'across full curriculum'));
+
+  const top5 = Object.entries(taskCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const maxCount = top5.length ? top5[0][1] : 1;
+  tasksEl.innerHTML = '';
+  if (!top5.length) {
+    tasksEl.innerHTML = '<div style="font-size:13px;color:var(--text-3);padding:8px 0">No tasks completed yet in this group.</div>';
+  } else {
+    top5.forEach(([id, count]) => {
+      const info = _taskIndex[id] || { label: id };
+      const pct = Math.round((count / maxCount) * 100);
+      const row = document.createElement('div');
+      row.style.marginBottom = '14px';
+      row.innerHTML =
+        '<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:4px">' +
+          '<span style="color:var(--text)">' + info.label + '</span>' +
+          '<span style="color:var(--text-3);font-weight:600;flex-shrink:0">' + count + '</span>' +
+        '</div>' +
+        '<div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden">' +
+          '<div style="height:100%;width:' + pct + '%;background:var(--risd-red);border-radius:4px;transition:width .4s ease"></div>' +
+        '</div>';
+      tasksEl.appendChild(row);
+    });
+  }
+}
+
+function makeStatRingCard(label, pct, sublabel) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;min-width:110px;max-width:130px';
+  const r = 40, circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  wrap.innerHTML =
+    '<svg width="96" height="96" viewBox="0 0 100 100">' +
+      '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="var(--border)" stroke-width="9"/>' +
+      '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="var(--risd-red)" stroke-width="9" ' +
+        'stroke-linecap="round" stroke-dasharray="' + dash.toFixed(1) + ' ' + circ.toFixed(1) + '" ' +
+        'transform="rotate(-90 50 50)"/>' +
+      '<text x="50" y="57" text-anchor="middle" font-size="22" font-weight="700" fill="var(--text)" font-family="Roboto, sans-serif">' + pct + '%</text>' +
+    '</svg>' +
+    '<div style="font-size:12px;font-weight:600;color:var(--text);text-align:center;margin-top:2px;line-height:1.3">' + label + '</div>' +
+    '<div style="font-size:11px;color:var(--text-3);text-align:center">' + sublabel + '</div>';
+  return wrap;
 }
 
 /* ════════════════════════════════════════════════
@@ -2627,6 +2858,7 @@ const IDLE_SECONDS = 30;
 function resetIdleTimer() {
   clearTimeout(_idleTimer);
   if (!currentUser) return; // not signed in
+  if (isAdmin) return; // admins never see the idle task prompt
   const modal = document.getElementById('idle-modal');
   if (modal && modal.style.display !== 'none') return; // prompt already open
   _idleTimer = setTimeout(showIdlePrompt, IDLE_SECONDS * 1000);
