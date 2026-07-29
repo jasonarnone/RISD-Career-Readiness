@@ -1396,6 +1396,7 @@ function switchTab(tab) {
     buildSplashTabs();
 
     if (revealYear) {
+      revealBackground(revealYear);
       revealYearRing(revealYear);
       revealYearButton(revealYear);
       setTimeout(() => {
@@ -1474,7 +1475,12 @@ function buildSplashTabs() {
         '</svg>';
       btn.setAttribute('aria-label', d.label + ' — locked');
       btn.onclick = () => {
-        showNotice('🔒', 'Complete 60% of ' + CHECKLIST[y - 1].label + ' to unlock the next year!');
+        // Always reference the actual next year in the unlock sequence —
+        // not whichever locked button was clicked. A student on 1st Year
+        // clicking Junior or Senior should see the same message as
+        // clicking Sophomore, since that's the real next step either way.
+        const nextLockedYear = [2, 3, 4].find(yy => !isYearUnlocked(yy));
+        showNotice('🔒', 'Complete 60% of ' + CHECKLIST[nextLockedYear - 1].label + ' to unlock the next year!');
       };
       container.appendChild(btn);
       return;
@@ -2913,6 +2919,31 @@ function closeNotice() {
 window._pendingRevealYear = window._pendingRevealYear || null;
 window._revealingYear     = window._revealingYear     || null;
 
+function revealBackground(year) {
+  const screen = document.getElementById('splash-screen');
+  if (!screen) return;
+  const yearColor = YEAR_COLORS[year].bg;
+
+  // Flash: background becomes the year color (matching the white
+  // ring/button flash), held for 1 second with no transition.
+  screen.style.transition = 'none';
+  screen.style.background = yearColor;
+
+  void screen.getBoundingClientRect(); // force reflow
+
+  // Then fade back to the normal black background over 2 seconds —
+  // simultaneously with, and in the opposite direction of, the ring and
+  // button fading from white into their true colored appearance.
+  setTimeout(() => {
+    screen.style.transition = 'background 2s ease';
+    screen.style.background = '#111';
+    setTimeout(() => {
+      screen.style.transition = '';
+      screen.style.background = ''; // let the normal CSS rule take back over
+    }, 2050);
+  }, 1000);
+}
+
 function revealYearRing(year) {
   const svg = document.getElementById('splash-ring-svg');
   if (!svg) return;
@@ -2989,12 +3020,14 @@ function revealYearButton(year) {
 let _idleTimer = null;
 let _idleTask  = null;
 let _idleYear  = null;
-const IDLE_SECONDS = 30;
+const IDLE_SECONDS = 90; // tripled from 30s
 
 function resetIdleTimer() {
   clearTimeout(_idleTimer);
   if (!currentUser) return; // not signed in
   if (isAdmin) return; // admins never see the idle task prompt
+  const onboarding = document.getElementById('onboarding-screen');
+  if (onboarding && onboarding.classList.contains('active')) return; // not during orientation
   const modal = document.getElementById('idle-modal');
   if (modal && modal.style.display !== 'none') return; // prompt already open
   _idleTimer = setTimeout(showIdlePrompt, IDLE_SECONDS * 1000);
