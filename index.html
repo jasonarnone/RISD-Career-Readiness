@@ -2103,10 +2103,11 @@ async function apiCall(action, params = {}) {
         url.searchParams.set('action', 'getAllStats');
         const resp = await fetch(url.toString());
         if (resp.ok) return resp.json();
+        // Non-2xx response: surface it instead of silently pretending "no data"
+        return { error: 'HTTP ' + resp.status + ' from Apps Script' };
       } catch(e) {
-        console.warn('[Demo] getAllStats fetch failed:', e.message);
+        return { error: 'Network error: ' + e.message };
       }
-      return { students: [] };
     }
     if (action === 'updateProfile') return { ok: true };
     if (action === 'importRoster') {
@@ -2335,6 +2336,14 @@ async function loadAdminStats() {
 
   try {
     const data = await apiCall('getAllStats', {});
+    if (data.error) {
+      // A real backend/network failure — show it plainly rather than
+      // rendering the misleading "no data matches these filters" state.
+      loadingEl.style.display = 'block';
+      contentEl.style.display = 'none';
+      loadingEl.textContent = 'Could not load statistics: ' + data.error;
+      return;
+    }
     window._adminStatsRaw = data.students || [];
     populateStatsFilters();
     renderAdminStats();
