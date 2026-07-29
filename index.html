@@ -1030,6 +1030,8 @@
     <h3>Account</h3>
     <p id="signout-email-display">Signed in as …</p>
     <div class="modal-actions">
+      <a href="mailto:risdcareers@risd.edu?cc=jarnone@risd.edu&subject=Support%3A%20RISD%20Career%20Readiness%20Tracker"
+         class="btn btn-ghost" style="text-decoration:none;display:flex;align-items:center;justify-content:center">Help / Feedback</a>
       <button class="btn btn-ghost" onclick="signOut()">Sign out</button>
       <button class="btn btn-primary" onclick="closeModal('signout-modal')">Stay signed in</button>
     </div>
@@ -1381,8 +1383,25 @@ function switchTab(tab) {
   } else if (tab === 'splash') {
   
     showScreen('splash-screen');
-    drawConcentricRings();
+
+    // If a year was just unlocked, reveal it now with a white-flash fade —
+    // consumed once, so it only plays on the first splash visit after
+    // unlocking, not on every subsequent visit.
+    const revealYear = window._pendingRevealYear;
+    window._pendingRevealYear = null;
+    window._revealingYear = revealYear; // read by animateSplashRings to hold off on this ring
+
+    drawConcentricRings(); // internally starts animateSplashRings(), which skips revealYear's ring
     buildSplashTabs();
+
+    if (revealYear) {
+      revealYearRing(revealYear);
+      revealYearButton(revealYear);
+      setTimeout(() => {
+        window._revealingYear = null;
+        animateSplashRings(); // restart cleanly now that the reveal has settled — includes the revealed ring
+      }, 3050); // 1s white hold + 2s fade + small buffer
+    }
   } else if (tab === 'checklist') {
   
     showScreen('student-screen');
@@ -1450,7 +1469,7 @@ function buildSplashTabs() {
       btn.style.color        = c.text;
       btn.innerHTML =
         '<svg viewBox="0 0 24 24" width="44" height="44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-        '<path fill="#111111" d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zM9 7c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7z"/>' +
+        '<path fill="#111111" fill-opacity="0.6" d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zM9 7c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7z"/>' +
         '</svg>';
       btn.setAttribute('aria-label', d.label + ' — locked');
       btn.onclick = () => {
@@ -1670,6 +1689,7 @@ function animateSplashRings() {
 
   groups.forEach((g, gi) => {
     const year = parseInt(g.getAttribute('data-year'), 10);
+    if (window._revealingYear === year) return; // being revealed with its own white-flash fade instead
     const yearColor = YEAR_COLORS[year].bg;
     const unchecked = Array.from(g.querySelectorAll('path'))
       .filter(p => p.getAttribute('fill') === 'transparent');
@@ -2026,7 +2046,15 @@ async function toggleItem(itemId, el) {
   if (!wasChecked) {
     for (const y of [2, 3, 4]) {
       if (!unlockedBefore[y] && isYearUnlocked(y)) {
-        showNotice('🎉', 'You unlocked ' + CHECKLIST[y].label + '!');
+        // The ring/button reveal animation happens the next time the
+        // student actually views the splash screen (see switchTab's
+        // 'splash' branch) — not immediately here, since they're likely
+        // still on a different screen when this fires.
+        window._pendingRevealYear = y;
+        const ringIcon = '<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">' +
+          '<circle cx="20" cy="20" r="15" fill="none" stroke="' + YEAR_COLORS[y].bg + '" stroke-width="6"/>' +
+          '</svg>';
+        showNotice(ringIcon, "You've unlocked " + CHECKLIST[y].label + "'s tasks!");
         break;
       }
     }
@@ -2151,12 +2179,17 @@ async function loadProgress(email) {
       window._studentProfile = p;
       updateSplashProfile(p);
     } else {
-      // fallback: use email prefix formatted as name
-      const emailPrefix = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      // No matching student row was found for this email. Guessing a
+      // display name from the email prefix (e.g. splitting on dots/
+      // underscores) looks confidently wrong for emails like
+      // "jarnone@risd.edu" that have no separator between first initial
+      // and last name — there's nothing reliable to split on. Showing
+      // the actual email is honest and never looks broken, whereas a
+      // wrong guessed name undermines trust in the whole app.
       const greetEl2 = document.getElementById('student-greeting');
-      if (greetEl2) { greetEl2.textContent = emailPrefix; greetEl2.style.color = 'white'; }
-      window._studentProfile = { 'First Name': emailPrefix };
-      updateSplashProfile({ 'First Name': emailPrefix });
+      if (greetEl2) { greetEl2.textContent = email; greetEl2.style.color = 'white'; }
+      window._studentProfile = {}; // no First Name — Welcome message falls back to "Welcome!"
+      updateSplashProfile({});
     }
   } catch(e) {
     console.warn('Could not load progress:', e);
@@ -2856,7 +2889,10 @@ function toggleOnboardDesc() {
 function showNotice(icon, message) {
   const modal = document.getElementById('notice-modal');
   if (!modal) return;
-  document.getElementById('notice-icon').textContent = icon;
+  // innerHTML (not textContent) so the icon can be either a plain emoji
+  // (e.g. the lock notice) or a small ring SVG (the unlock notice below) —
+  // both callers use fixed, hardcoded strings, never user input.
+  document.getElementById('notice-icon').innerHTML = icon;
   document.getElementById('notice-message').textContent = message;
   modal.style.display = 'flex';
 }
@@ -2864,6 +2900,85 @@ function showNotice(icon, message) {
 function closeNotice() {
   const modal = document.getElementById('notice-modal');
   if (modal) modal.style.display = 'none';
+}
+
+/* ════════════════════════════════════════════════
+   YEAR UNLOCK REVEAL
+   The next time the student views the splash screen after unlocking a
+   year, that year's ring and button flash pure white, then fade (2s) to
+   their normal appearance — a deliberate "welcome to your next year"
+   moment rather than an instant flash while they're on another screen.
+   ════════════════════════════════════════════════ */
+window._pendingRevealYear = window._pendingRevealYear || null;
+window._revealingYear     = window._revealingYear     || null;
+
+function revealYearRing(year) {
+  const svg = document.getElementById('splash-ring-svg');
+  if (!svg) return;
+  const g = svg.querySelector('g[data-year="' + year + '"]');
+  if (!g) return; // e.g. already fully complete and rendered as a solid circle instead
+
+  const paths = Array.from(g.querySelectorAll('path'));
+  if (!paths.length) return;
+
+  // Capture each segment's already-correct final look before overwriting
+  const finals = paths.map(p => ({
+    fill: p.getAttribute('fill'),
+    stroke: p.getAttribute('stroke'),
+    opacity: p.getAttribute('opacity')
+  }));
+
+  // Flash: every segment pure white, full opacity, no transition
+  paths.forEach(p => {
+    p.style.transition = 'none';
+    p.setAttribute('fill', 'white');
+    p.setAttribute('stroke', 'white');
+    p.setAttribute('opacity', '1');
+  });
+
+  void g.getBoundingClientRect(); // force reflow before animating away from the flash state
+
+  // Hold solid white for a full second so the flash actually reads as a
+  // moment, then fade to the true segment appearance over 2 seconds.
+  setTimeout(() => {
+    paths.forEach((p, i) => {
+      p.style.transition = 'fill 2s ease, stroke 2s ease, opacity 2s ease';
+      p.setAttribute('fill', finals[i].fill);
+      p.setAttribute('stroke', finals[i].stroke);
+      p.setAttribute('opacity', finals[i].opacity);
+    });
+    setTimeout(() => { paths.forEach(p => { p.style.transition = ''; }); }, 2050);
+  }, 1000);
+}
+
+function revealYearButton(year) {
+  const container = document.getElementById('splash-year-tabs');
+  if (!container) return;
+  const btn = container.children[year - 1]; // buildSplashTabs appends in year 1→4 order
+  if (!btn) return;
+
+  // A year that just unlocked is always in the plain color+label button
+  // state (never locked, never already complete) — safe to flash directly.
+  const finalBg     = btn.style.background;
+  const finalBorder = btn.style.borderColor;
+  const finalColor  = btn.style.color;
+
+  btn.style.transition  = 'none';
+  btn.style.background  = 'white';
+  btn.style.borderColor = 'white';
+  btn.style.color       = 'white';
+
+  void btn.getBoundingClientRect(); // force reflow
+
+  // Same 1-second white hold as the ring, so both elements read as one
+  // unified reveal rather than two independently-timed effects.
+  setTimeout(() => {
+    btn.style.transition  = 'background 2s ease, border-color 2s ease, color 2s ease';
+    btn.style.background  = finalBg;
+    btn.style.borderColor = finalBorder;
+    btn.style.color       = finalColor;
+    setTimeout(() => { btn.style.transition = ''; }, 2050);
+  }, 1000);
 }
 
 /* ════════════════════════════════════════════════
