@@ -740,7 +740,7 @@
       </div>
       <div style="flex:1" onclick="event.stopPropagation()">
         <div id="onboard-title" style="font-size:14px;font-weight:500;line-height:1.3;color:#1a1a1a;font-family:Georgia,serif">Start Career Readiness tracking.</div>
-        <div id="onboard-desc" style="font-size:12px;color:#888884;margin-top:6px;line-height:1.5;display:none;font-family:Georgia,serif;text-align:left">
+        <div id="onboard-desc" style="font-size:12px;color:#1a1a1a;margin-top:6px;line-height:1.5;display:none;font-family:Georgia,serif;text-align:left">
           Welcome to the first step in your Career Readiness journey! Follow these tasks geared to each year in school. Start with the 1st Year to build foundational skills for your professional practice!
         </div>
       </div>
@@ -1087,7 +1087,12 @@ const ONBOARD_TASK_ID = '1-onboard-1';
    Year 1 is always available. Each later year
    unlocks when the previous year is ≥ 60% done.
    ════════════════════════════════════════════════ */
-const UNLOCK_PCT = 0.6;
+const UNLOCK_PCT = 0.5;
+
+// EXPERIMENTAL — set to false to fully disable the year-complete "hero
+// zoom" animation below and revert instantly to the old plain behavior,
+// with zero other code changes needed.
+const ENABLE_YEAR_COMPLETE_HERO_ZOOM = true;
 
 function yearPct(y) {
   const all = CHECKLIST[y].seasons.flatMap(s => s.items);
@@ -1396,7 +1401,7 @@ function switchTab(tab) {
     buildSplashTabs();
 
     if (revealYear) {
-      revealBackground(revealYear);
+      dimOtherSplashElements(revealYear);
       revealYearRing(revealYear);
       revealYearButton(revealYear);
       setTimeout(() => {
@@ -1480,7 +1485,7 @@ function buildSplashTabs() {
         // clicking Junior or Senior should see the same message as
         // clicking Sophomore, since that's the real next step either way.
         const nextLockedYear = [2, 3, 4].find(yy => !isYearUnlocked(yy));
-        showNotice('🔒', 'Complete 60% of ' + CHECKLIST[nextLockedYear - 1].label + ' to unlock the next year!');
+        showNotice('🔒', 'Complete 50% of ' + CHECKLIST[nextLockedYear - 1].label + ' to unlock the next year!');
       };
       container.appendChild(btn);
       return;
@@ -1576,6 +1581,13 @@ function drawConcentricRings() {
     const segDeg  = (360 / total) - gap;
     const allDone = all.every(i => completedItems[i.id]);
 
+    // Every ring state — locked, complete, or in-progress — is wrapped in
+    // a common <g data-year="N"> container, so any single ring can be
+    // reliably selected/targeted regardless of which state it's in
+    // (used by the reveal animation to dim/reveal "every other ring").
+    const yearGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    yearGroup.setAttribute('data-year', year);
+
     if (!isYearUnlocked(year)) {
       // Locked: a single simple outline ring — no segments, no animation
       const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -1585,7 +1597,7 @@ function drawConcentricRings() {
       ring.setAttribute('stroke', c.bg);
       ring.setAttribute('stroke-width', '2');
       ring.setAttribute('opacity', '0.45');
-      svg.appendChild(ring);
+      yearGroup.appendChild(ring);
     } else if (allDone) {
       const outer = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       outer.setAttribute('cx', cx); outer.setAttribute('cy', cy);
@@ -1593,11 +1605,10 @@ function drawConcentricRings() {
       const inner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       inner.setAttribute('cx', cx); inner.setAttribute('cy', cy);
       inner.setAttribute('r', innerR); inner.setAttribute('fill', '#111');
-      svg.appendChild(outer);
-      svg.appendChild(inner);
+      yearGroup.appendChild(outer);
+      yearGroup.appendChild(inner);
     } else {
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.setAttribute('data-year', year);
       g.setAttribute('transform', `rotate(-90, ${cx}, ${cy})`);
       all.forEach((item, i) => {
         const isDone   = !!completedItems[item.id];
@@ -1611,8 +1622,9 @@ function drawConcentricRings() {
         path.setAttribute('opacity',      isDone ? '1' : '0.45');
         g.appendChild(path);
       });
-      svg.appendChild(g);
+      yearGroup.appendChild(g);
     }
+    svg.appendChild(yearGroup);
   });
 
   // Plain dark center circle — no text
@@ -1691,6 +1703,9 @@ function animateSplashRings() {
   // when completed or locked years draw no segment group at all.
   const groups = svg.querySelectorAll('g[data-year]');
   if (!groups.length) return;
+  // Each outer group may contain a locked ring circle, done-state circles,
+  // or (for in-progress rings) an inner rotated <g> holding the actual
+  // segment paths — only that inner one has anything to animate.
 
   const intervals = { 1: 360, 2: 480, 3: 620, 4: 280 };
 
@@ -1698,7 +1713,8 @@ function animateSplashRings() {
     const year = parseInt(g.getAttribute('data-year'), 10);
     if (window._revealingYear === year) return; // being revealed with its own white-flash fade instead
     const yearColor = YEAR_COLORS[year].bg;
-    const unchecked = Array.from(g.querySelectorAll('path'))
+    const innerRotateGroup = g.querySelector('g') || g; // in-progress rings nest paths one level deeper
+    const unchecked = Array.from(innerRotateGroup.querySelectorAll('path'))
       .filter(p => p.getAttribute('fill') === 'transparent');
     if (!unchecked.length) return;
 
@@ -1728,6 +1744,95 @@ function animateSplashRings() {
 }
 
 // 5-point star path centered at (cx,cy); outerR = tip radius
+/* ════════════════════════════════════════════════
+   EXPERIMENTAL: YEAR-COMPLETE HERO ZOOM
+   ────────────────────────────────────────────────
+   Entirely self-contained and gated behind
+   ENABLE_YEAR_COMPLETE_HERO_ZOOM above. To fully
+   revert this feature: set that flag to false, or
+   delete this function plus its single call site in
+   toggleItem — nothing else in the app depends on it.
+
+   Sequence: a clone of the completed ring+star zooms
+   from its real on-screen position on the year screen
+   up to fill the viewport (~black), then — after
+   switching to the splash screen underneath it — zooms
+   back down onto the real splash ring graphic's
+   position, holds briefly, then fades away.
+   ════════════════════════════════════════════════ */
+function playYearCompleteHeroZoom(year) {
+  const sourceEl = document.getElementById('progress-ring-svg');
+  if (!sourceEl) return;
+  const startRect = sourceEl.getBoundingClientRect();
+  if (!startRect.width || !startRect.height) return; // element not visible — skip safely
+
+  const yearColor = YEAR_COLORS[year].bg;
+  const ZOOM_MS = 900;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'hero-zoom-overlay';
+  overlay.style.cssText =
+    'position:fixed;z-index:950;pointer-events:none;' +
+    'left:' + startRect.left + 'px;top:' + startRect.top + 'px;' +
+    'width:' + startRect.width + 'px;height:' + startRect.height + 'px;';
+
+  overlay.innerHTML =
+    '<svg viewBox="0 0 200 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle cx="100" cy="100" r="92" fill="' + yearColor + '"/>' +
+      '<circle cx="100" cy="100" r="60" fill="#111111"/>' +
+      '<path d="' + makeStarPath(100, 100, 44) + '" fill="#111111" stroke="white" stroke-width="1"/>' +
+    '</svg>';
+
+  document.body.appendChild(overlay);
+  void overlay.getBoundingClientRect(); // force reflow before animating
+
+  // Phase 1: zoom up until the ring+star (black) fills the viewport
+  const targetSize = Math.max(window.innerWidth, window.innerHeight) * 1.3;
+  const targetLeft = (window.innerWidth - targetSize) / 2;
+  const targetTop  = (window.innerHeight - targetSize) / 2;
+
+  requestAnimationFrame(() => {
+    overlay.style.transition = 'left ' + ZOOM_MS + 'ms ease-in, top ' + ZOOM_MS + 'ms ease-in, width ' + ZOOM_MS + 'ms ease-in, height ' + ZOOM_MS + 'ms ease-in';
+    overlay.style.left = targetLeft + 'px';
+    overlay.style.top = targetTop + 'px';
+    overlay.style.width = targetSize + 'px';
+    overlay.style.height = targetSize + 'px';
+  });
+
+  setTimeout(() => {
+    // Screen is now effectively filled with black — switch underneath the overlay
+    switchTab('splash');
+
+    requestAnimationFrame(() => {
+      const destEl = document.getElementById('splash-ring-svg');
+      const destRect = destEl ? destEl.getBoundingClientRect() : null;
+      if (!destRect || !destRect.width) {
+        // Couldn't find a landing spot — just fade out from fullscreen rather than get stuck
+        overlay.style.transition = 'opacity 1s ease';
+        overlay.style.opacity = '0';
+        setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 1050);
+        return;
+      }
+
+      // Phase 2: zoom back down onto the real splash ring's position
+      overlay.style.transition = 'left ' + ZOOM_MS + 'ms ease-out, top ' + ZOOM_MS + 'ms ease-out, width ' + ZOOM_MS + 'ms ease-out, height ' + ZOOM_MS + 'ms ease-out';
+      overlay.style.left = destRect.left + 'px';
+      overlay.style.top = destRect.top + 'px';
+      overlay.style.width = destRect.width + 'px';
+      overlay.style.height = destRect.height + 'px';
+
+      // Phase 3: once landed, hold 2s, then fade out and clean up
+      setTimeout(() => {
+        setTimeout(() => {
+          overlay.style.transition = 'opacity 1s ease';
+          overlay.style.opacity = '0';
+          setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 1050);
+        }, 2000);
+      }, ZOOM_MS);
+    });
+  }, ZOOM_MS + 50);
+}
+
 function makeStarPath(cx, cy, outerR) {
   const innerR = outerR * 0.4;
   const pts = [];
@@ -2040,6 +2145,11 @@ async function toggleItem(itemId, el) {
   // Snapshot unlock state before the change so we can detect transitions
   const unlockedBefore = { 2: isYearUnlocked(2), 3: isYearUnlocked(3), 4: isYearUnlocked(4) };
 
+  // Snapshot whether the CURRENT year was already fully complete, so we
+  // can detect the exact moment it becomes complete (for the hero zoom)
+  const currentYearItems = CHECKLIST[currentYear].seasons.flatMap(s => s.items);
+  const wasCurrentYearComplete = currentYearItems.every(item => completedItems[item.id]);
+
   completedItems[itemId] = !wasChecked;
   if (!wasChecked && isAdmin && adminViewEmail) {
     completedItems[itemId + '_by_admin'] = true;
@@ -2049,6 +2159,14 @@ async function toggleItem(itemId, el) {
 
   el.classList.toggle('done', !wasChecked);
   updateProgress();
+
+  // Trigger the hero zoom on the exact moment this year becomes complete
+  // (checking only, never on uncheck) — fully removable via the flag above.
+  if (ENABLE_YEAR_COMPLETE_HERO_ZOOM && !wasChecked && !wasCurrentYearComplete) {
+    const isCompleteNow = currentYearItems.every(item => completedItems[item.id]);
+    if (isCompleteNow) playYearCompleteHeroZoom(currentYear);
+  }
+
   // Celebrate newly unlocked years (checking only, never on uncheck)
   if (!wasChecked) {
     for (const y of [2, 3, 4]) {
@@ -2392,11 +2510,19 @@ async function loadAdminStats() {
   }
 }
 
+// Splits a combined "Painting / Illustration" major string into its
+// individual majors, so a double-major student gets counted once under
+// each real major — never as a new combined bucket of its own.
+function splitMajors(majorString) {
+  return (majorString || '').toString().split('/')
+    .map(m => m.trim())
+    .filter(Boolean);
+}
+
 function populateStatsFilters() {
   const majors = new Set();
   (window._adminStatsRaw || []).forEach(s => {
-    const m = ((s.profile || {})['Major'] || '').toString().trim();
-    if (m) majors.add(m);
+    splitMajors((s.profile || {})['Major']).forEach(m => majors.add(m));
   });
   const sel = document.getElementById('stats-filter-major');
   const current = sel.value;
@@ -2419,7 +2545,7 @@ function renderAdminStats() {
 
   const filtered = raw.filter(s => {
     const p = s.profile || {};
-    if (majorFilter !== 'all' && (p['Major'] || '').toString().trim() !== majorFilter) return false;
+    if (majorFilter !== 'all' && !splitMajors(p['Major']).includes(majorFilter)) return false;
     if (yearFilter !== 'all') {
       if (studentYearNumber(p['Student Group']) !== parseInt(yearFilter, 10)) return false;
     }
@@ -2919,27 +3045,44 @@ function closeNotice() {
 window._pendingRevealYear = window._pendingRevealYear || null;
 window._revealingYear     = window._revealingYear     || null;
 
-function revealBackground(year) {
-  const screen = document.getElementById('splash-screen');
-  if (!screen) return;
-  const yearColor = YEAR_COLORS[year].bg;
+function dimOtherSplashElements(year) {
+  const svg     = document.getElementById('splash-ring-svg');
+  const tabs    = document.getElementById('splash-year-tabs');
+  const hint    = document.getElementById('splash-hint');
+  const others  = [];
 
-  // Flash: background becomes the year color (matching the white
-  // ring/button flash), held for 1 second with no transition.
-  screen.style.transition = 'none';
-  screen.style.background = yearColor;
+  // Every other ring — locked, complete, or in-progress — is wrapped in
+  // its own <g data-year="N">, so this reliably finds "every ring except
+  // the one being revealed" regardless of each ring's individual state.
+  if (svg) {
+    Array.from(svg.querySelectorAll('g[data-year]')).forEach(g => {
+      if (parseInt(g.getAttribute('data-year'), 10) !== year) others.push(g);
+    });
+  }
+  if (tabs) {
+    Array.from(tabs.children).forEach((btn, i) => {
+      if (i !== year - 1) others.push(btn); // buildSplashTabs appends in year 1→4 order
+    });
+  }
+  if (hint) others.push(hint);
 
-  void screen.getBoundingClientRect(); // force reflow
+  // Hide everything else immediately — no transition — so the whole
+  // rest of the screen reads as black (matching the background), leaving
+  // only the revealed ring/button visible during their white flash.
+  others.forEach(el => {
+    el.style.transition = 'none';
+    el.style.opacity = '0';
+  });
 
-  // Then fade back to the normal black background over 2 seconds —
-  // simultaneously with, and in the opposite direction of, the ring and
-  // button fading from white into their true colored appearance.
+  void (svg || document.body).getBoundingClientRect(); // force reflow
+
+  // Then fade everything else back in over 2 seconds — simultaneously
+  // with, and in the opposite direction of, the ring and button fading
+  // from white into their true colored appearance.
   setTimeout(() => {
-    screen.style.transition = 'background 2s ease';
-    screen.style.background = '#111';
+    others.forEach(el => { el.style.transition = 'opacity 2s ease'; el.style.opacity = '1'; });
     setTimeout(() => {
-      screen.style.transition = '';
-      screen.style.background = ''; // let the normal CSS rule take back over
+      others.forEach(el => { el.style.transition = ''; el.style.opacity = ''; });
     }, 2050);
   }, 1000);
 }
@@ -2947,11 +3090,12 @@ function revealBackground(year) {
 function revealYearRing(year) {
   const svg = document.getElementById('splash-ring-svg');
   if (!svg) return;
-  const g = svg.querySelector('g[data-year="' + year + '"]');
-  if (!g) return; // e.g. already fully complete and rendered as a solid circle instead
+  const outerGroup = svg.querySelector('g[data-year="' + year + '"]');
+  if (!outerGroup) return;
+  const g = outerGroup.querySelector('g') || outerGroup; // in-progress rings nest paths one level deeper
 
   const paths = Array.from(g.querySelectorAll('path'));
-  if (!paths.length) return;
+  if (!paths.length) return; // locked/complete rings render as plain circles, not paths — nothing to reveal here
 
   // Capture each segment's already-correct final look before overwriting
   const finals = paths.map(p => ({
