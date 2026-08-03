@@ -36,11 +36,14 @@
 
   body {
     font-family: Georgia, serif;
-    background: var(--bg);
+    background: #111; /* prevents a white flash/gap during any momentary
+                          overscroll bounce or viewport-chrome resize on
+                          mobile — most screens are dark-themed anyway */
     color: var(--text);
     min-height: 100vh;
     font-size: 15px;
     line-height: 1.5;
+    overscroll-behavior: none;
   }
 
   /* ── CONFIG BANNER ── */
@@ -76,7 +79,7 @@
   #config-banner .dismiss:hover { background: #444; }
 
   /* ── SCREENS ── */
-  html { overflow: hidden; height: 100%; }
+  html { overflow: hidden; height: 100%; background: #111; overscroll-behavior: none; }
   .screen { display: none; padding: 0 0 80px; }
   .screen.active {
     display: block;
@@ -1772,9 +1775,10 @@ function playYearCompleteHeroZoom(year) {
   const overlay = document.createElement('div');
   overlay.id = 'hero-zoom-overlay';
   overlay.style.cssText =
-    'position:fixed;z-index:950;pointer-events:none;' +
+    'position:fixed;z-index:950;pointer-events:none;transform-origin:center center;' +
     'left:' + startRect.left + 'px;top:' + startRect.top + 'px;' +
-    'width:' + startRect.width + 'px;height:' + startRect.height + 'px;';
+    'width:' + startRect.width + 'px;height:' + startRect.height + 'px;' +
+    'transform:rotate(0deg);';
 
   overlay.innerHTML =
     '<svg viewBox="0 0 200 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">' +
@@ -1786,17 +1790,25 @@ function playYearCompleteHeroZoom(year) {
   document.body.appendChild(overlay);
   void overlay.getBoundingClientRect(); // force reflow before animating
 
-  // Phase 1: zoom up until the ring+star (black) fills the viewport
-  const targetSize = Math.max(window.innerWidth, window.innerHeight) * 1.3;
+  // Phase 1: zoom up until the STAR ITSELF (not just the ring) is large
+  // enough to fill the viewport. The star only spans ~44% of the SVG's
+  // own width, so the overlay needs to grow well past the viewport size
+  // for the star's body to genuinely fill the screen edge-to-edge.
+  const targetSize = Math.max(window.innerWidth, window.innerHeight) * 2.8;
   const targetLeft = (window.innerWidth - targetSize) / 2;
   const targetTop  = (window.innerHeight - targetSize) / 2;
 
   requestAnimationFrame(() => {
-    overlay.style.transition = 'left ' + ZOOM_MS + 'ms ease-in, top ' + ZOOM_MS + 'ms ease-in, width ' + ZOOM_MS + 'ms ease-in, height ' + ZOOM_MS + 'ms ease-in';
+    // ease-out: starts fast, decelerates into its full scale on the year screen
+    overlay.style.transition =
+      'left ' + ZOOM_MS + 'ms ease-out, top ' + ZOOM_MS + 'ms ease-out, ' +
+      'width ' + ZOOM_MS + 'ms ease-out, height ' + ZOOM_MS + 'ms ease-out, ' +
+      'transform ' + ZOOM_MS + 'ms ease-out';
     overlay.style.left = targetLeft + 'px';
     overlay.style.top = targetTop + 'px';
     overlay.style.width = targetSize + 'px';
     overlay.style.height = targetSize + 'px';
+    overlay.style.transform = 'rotate(360deg)';
   });
 
   setTimeout(() => {
@@ -1814,12 +1826,18 @@ function playYearCompleteHeroZoom(year) {
         return;
       }
 
-      // Phase 2: zoom back down onto the real splash ring's position
-      overlay.style.transition = 'left ' + ZOOM_MS + 'ms ease-out, top ' + ZOOM_MS + 'ms ease-out, width ' + ZOOM_MS + 'ms ease-out, height ' + ZOOM_MS + 'ms ease-out';
+      // Phase 2: zoom back down onto the real splash ring's position.
+      // ease-in: starts slow, then accelerates to an abrupt stop on landing —
+      // the reverse velocity curve of phase 1, as requested.
+      overlay.style.transition =
+        'left ' + ZOOM_MS + 'ms ease-in, top ' + ZOOM_MS + 'ms ease-in, ' +
+        'width ' + ZOOM_MS + 'ms ease-in, height ' + ZOOM_MS + 'ms ease-in, ' +
+        'transform ' + ZOOM_MS + 'ms ease-in';
       overlay.style.left = destRect.left + 'px';
       overlay.style.top = destRect.top + 'px';
       overlay.style.width = destRect.width + 'px';
       overlay.style.height = destRect.height + 'px';
+      overlay.style.transform = 'rotate(720deg)';
 
       // Phase 3: once landed, hold 2s, then fade out and clean up
       setTimeout(() => {
