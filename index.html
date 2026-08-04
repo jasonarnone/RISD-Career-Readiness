@@ -717,6 +717,17 @@
   <div class="splash-year-tabs" id="splash-year-tabs"></div>
   <div id="splash-hint" style="opacity:0;transition:none;font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;padding:14px 24px 0;pointer-events:none">(Click a Year button to see career tasks.)</div>
   <div id="splash-status-message" style="display:none;font-family:'Roboto',sans-serif;font-weight:700;font-size:20px;letter-spacing:0.03em;text-align:center;padding:18px 20px 0;pointer-events:none"></div>
+
+  <!-- DEMO-ONLY: FEEDBACK FORM (stripped out of the live build by make_live.py) -->
+  <div style="width:100%;max-width:380px;padding:32px 24px 40px;margin:0 auto">
+    <div style="color:white;font-family:Georgia,serif;font-size:15px;font-weight:600;text-align:center;margin-bottom:10px">Please share your feedback!</div>
+    <textarea id="feedback-text" placeholder="Share your reactions to this app&#8217;s functionality, appearance, subject matter.. really anything at all!" style="width:100%;min-height:110px;padding:14px;border-radius:14px;border:1px solid white;background:transparent;color:white;font-family:Georgia,serif;font-size:14px;line-height:1.5;resize:vertical;box-sizing:border-box"></textarea>
+    <button onclick="submitFeedback()" style="width:100%;margin-top:12px;padding:12px;background:#fd9a1a;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:Georgia,serif;touch-action:manipulation;-webkit-tap-highlight-color:transparent">Submit Feedback</button>
+    <div style="font-family:Georgia,serif;font-size:12px;color:rgba(255,255,255,0.6);text-align:center;margin-top:12px;line-height:1.5">
+      You can also submit your feedback to <a href="mailto:jarnone@risd.edu?subject=Feedback%3A%20RISD%20Career%20Readiness%20Tracker" style="color:rgba(255,255,255,0.85);text-decoration:underline">jarnone@risd.edu</a>
+    </div>
+  </div>
+  <!-- END DEMO-ONLY: FEEDBACK FORM -->
 </div>
 
 <!-- MAIN STUDENT APP -->
@@ -1706,7 +1717,7 @@ function playYearCompleteHeroZoom(year) {
 
   const yearColor = YEAR_COLORS[year].bg;
   const ZOOM_MS = 900;
-  const ECHO_DELAY_MS = 400; // the ghost sprite lags the primary by 0.4s
+  const ECHO_DELAY_MS = 200; // the ghost sprite lags the primary by 0.2s
 
   // Real per-year outer radii from drawConcentricRings' own band
   // definitions, and the splash SVG's own viewBox — used below to land
@@ -1719,6 +1730,16 @@ function playYearCompleteHeroZoom(year) {
       '<circle cx="100" cy="100" r="92" fill="' + yearColor + '"/>' +
       '<circle cx="100" cy="100" r="60" fill="#111111"/>' +
       '<path d="' + makeStarPath(100, 100, 44) + '" fill="' + yearColor + '"/>' +
+    '</svg>';
+
+  // Ghost sprite uses the same ring but no star — the star only appears
+  // on the primary sprite up front. Inner circle is fully transparent
+  // (not black) to avoid any unwanted dark overlap/draw-order artifacts
+  // while it trails behind the primary.
+  const svgMarkupNoStar =
+    '<svg viewBox="0 0 200 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle cx="100" cy="100" r="92" fill="' + yearColor + '"/>' +
+      '<circle cx="100" cy="100" r="60" fill="transparent"/>' +
     '</svg>';
 
   const baseStyle =
@@ -1737,7 +1758,7 @@ function playYearCompleteHeroZoom(year) {
   const echo = document.createElement('div');
   echo.id = 'hero-zoom-echo';
   echo.style.cssText = baseStyle + 'z-index:950;opacity:0.5;';
-  echo.innerHTML = svgMarkup;
+  echo.innerHTML = svgMarkupNoStar;
 
   document.body.appendChild(echo);
   document.body.appendChild(overlay);
@@ -2855,6 +2876,22 @@ function toast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
+
+/* DEMO-ONLY: FEEDBACK FORM (stripped out of the live build by make_live.py) */
+function submitFeedback() {
+  const el = document.getElementById('feedback-text');
+  const text = (el && el.value || '').trim();
+  if (!text) {
+    toast('Please write a bit of feedback first!');
+    return;
+  }
+  const subject = 'Feedback: RISD Career Readiness Tracker';
+  const mailto = 'mailto:jarnone@risd.edu' +
+    '?subject=' + encodeURIComponent(subject) +
+    '&body=' + encodeURIComponent(text);
+  window.location.href = mailto;
+}
+/* END DEMO-ONLY: FEEDBACK FORM */
 
 
 
