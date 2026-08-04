@@ -46,38 +46,6 @@
     overscroll-behavior: none;
   }
 
-  /* ── CONFIG BANNER ── */
-  #config-banner {
-    background: #1a1a1a;
-    color: #f0f0f0;
-    padding: 12px 16px;
-    font-size: 13px;
-    line-height: 1.6;
-    border-bottom: 1px solid #333;
-  }
-  #config-banner strong { color: #fff; }
-  #config-banner code {
-    background: #333;
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 12px;
-    color: #7dd3fc;
-  }
-  #config-banner .steps { margin-top: 8px; padding-left: 16px; }
-  #config-banner .steps li { margin: 3px 0; }
-  #config-banner .dismiss {
-    margin-top: 10px;
-    background: #333;
-    border: none;
-    color: #ccc;
-    padding: 5px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
-  }
-  #config-banner .dismiss:hover { background: #444; }
-
   /* ── SCREENS ── */
   html { overflow: hidden; height: 100%; background: #111; overscroll-behavior: none; }
   .screen { display: none; padding: 0 0 80px; }
@@ -136,10 +104,12 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 80vh;
-    padding: 40px 24px;
-    background: #111;
+    justify-content: flex-end;
+    min-height: 100vh;
+    padding: 0 24px 40px;
+    background: #111; /* fallback if the background image fails to load */
+    position: relative;
+    overflow: hidden;
   }
   .signin-card {
     background: transparent;
@@ -149,12 +119,6 @@
     width: 100%;
     text-align: center;
   }
-  .signin-logo {
-    width: 56px; height: 56px;
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 20px;
-  }
-  .signin-logo span { color: white; font-size: 22px; font-weight: 700; }
   .signin-card h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; color: white; }
   .signin-card p { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 28px; line-height: 1.5; }
   #google-signin-btn { width: 100%; justify-content: center; }
@@ -162,19 +126,6 @@
     margin-top: 16px;
     font-size: 12px;
     color: rgba(255,255,255,0.5);
-  }
-  .admin-link {
-    margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255,255,255,0.15);
-    font-size: 13px;
-    color: rgba(255,255,255,0.5);
-  }
-  .admin-link a {
-    color: #fd9a1a;
-    text-decoration: none;
-    font-weight: 500;
-    cursor: pointer;
   }
 
   /* ── PROGRESS RING ── */
@@ -644,31 +595,10 @@
 
 <!-- SIGN IN SCREEN -->
 <div id="signin-screen" class="screen active">
-  <div id="config-banner" style="background:#1a1a1a;color:#f0f0f0;padding:10px 14px;font-size:12px;line-height:1.5;text-align:center">
-    <strong style="color:#fff">🟡 Demo mode</strong> — enter any email to preview.
-    <button onclick="dismissBanner()" style="margin-left:8px;background:#333;border:none;color:#ccc;padding:3px 10px;border-radius:5px;cursor:pointer;font-size:11px">Hide</button>
-  </div>
-  <div class="signin-card">
-    <div class="signin-logo"><svg width="56" height="56" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
-  <defs><style>
-    .i56-1{fill:#fd9a1a;stroke:#fd9a1a}
-    .i56-1,.i56-2,.i56-3,.i56-4,.i56-5{stroke-miterlimit:10}
-    .i56-1,.i56-2,.i56-3,.i56-5{stroke-width:70px}
-    .i56-2{stroke:#5ceaff}.i56-2,.i56-3,.i56-5{fill:none}
-    .i56-3{stroke:#bdf452}.i56-4{stroke:none;fill:none}
-    .i56-5{stroke:#f1369f}
-  </style></defs>
-  <rect class="i56-4" width="1080" height="1080"/>
-  <circle class="i56-1" cx="540" cy="540" r="147.06"/>
-  <circle class="i56-2" cx="540" cy="540" r="264.71"/>
-  <circle class="i56-5" cx="540" cy="540" r="382.35"/>
-  <circle class="i56-3" cx="540" cy="540" r="500"/>
-</svg></div>
+  <div id="signin-bg" style="position:absolute;inset:0;background-image:url('https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%201.jpg');background-size:cover;background-position:center;background-repeat:no-repeat;opacity:1;"></div>
+  <div class="signin-card" id="signin-card" style="opacity:0;position:relative;z-index:2;">
     <h2>Career Ready</h2>
     <p style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.65;margin-bottom:20px;text-align:left">In order to help you navigate your academic journey through RISD with career readiness on your mind, the RISD Career Center created checklists for each academic grade level.</p>
-    <div style="background:#fef9ec;border:1px solid #f5d76e;border-radius:8px;padding:10px 12px;margin-bottom:16px;text-align:left;font-size:12px;color:#7a5800;line-height:1.5;">
-      <strong>Demo mode</strong> — enter any email to preview the app. Progress saves in your browser for this session only.
-    </div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
       <input id="demo-email-input" type="email" placeholder="you@risd.edu"
         style="width:100%;padding:10px 14px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:15px;color:white;background:rgba(255,255,255,0.1);outline:none;font-family:Georgia,serif;"
@@ -679,9 +609,6 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <div class="admin-link">
-      Career Center staff? <a onclick="showAdminLogin()">Admin sign in →</a>
-    </div>
   </div>
 </div>
 
@@ -987,21 +914,6 @@
   </div>
 </div>
 
-<!-- ADMIN LOGIN MODAL -->
-<div class="modal-bg" id="admin-modal">
-  <div class="modal">
-    <h3>Admin sign in</h3>
-    <p>Enter your email to access the admin panel. In demo mode, any email matching the admin list gets admin access.</p>
-    <div class="modal-actions">
-      <input id="demo-admin-email" type="email" placeholder="admin@risd.edu"
-        style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:15px;color:var(--text);background:var(--bg);outline:none;margin-bottom:8px;"
-        onkeydown="if(event.key==='Enter')demoAdminSignIn()" />
-      <button onclick="demoAdminSignIn()" class="btn btn-primary" style="width:100%;padding:12px;background:var(--admin-accent);border-color:var(--admin-accent)">Sign in as admin</button>
-      <button class="btn btn-ghost" style="margin-top:8px;width:100%;padding:12px;" onclick="closeModal('admin-modal')">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <div id="toast"></div>
 
 <script>
@@ -1226,10 +1138,6 @@ function hideLoadingOverlay() {
   if (el) { el.style.display = 'none'; }
 }
 
-function dismissBanner() {
-  document.getElementById('config-banner').style.display = 'none';
-}
-
 /* ════════════════════════════════════════════════
    DEMO SIGN-IN (replaces Google OAuth for local preview)
    ════════════════════════════════════════════════ */
@@ -1252,15 +1160,6 @@ function demoSignIn() {
   const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   showLoadingOverlay();
   signInUser(email, name, null);
-}
-
-function demoAdminSignIn() {
-  const email = document.getElementById('demo-admin-email').value.trim().toLowerCase();
-  if (!email || !email.includes('@')) { toast('Please enter a valid email address'); return; }
-  closeModal('admin-modal');
-  const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  signInUser(email, name, null);
-  if (!CONFIG.ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email)) toast('⚠️ That email is not on the admin list');
 }
 
 function showDomainError(email) {
@@ -1868,7 +1767,6 @@ function blendToBlack(hex, factor) {
   return `rgb(${nr},${ng},${nb})`;
 }
 
-function showAdminLogin() { openModal('admin-modal'); }
 function showSignoutModal() { openModal('signout-modal'); }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -3507,6 +3405,16 @@ function onUserActivity() {
    INIT
    ════════════════════════════════════════════════ */
 window.addEventListener('load', () => {
+  // Login screen: let the background image sit at full vibrancy for a
+  // beat, then dim it to 50% while the login content fades in on top —
+  // one coordinated reveal moment rather than everything appearing at once.
+  setTimeout(() => {
+    const bg = document.getElementById('signin-bg');
+    const card = document.getElementById('signin-card');
+    if (bg)   { bg.style.transition = 'opacity 0.5s ease';   bg.style.opacity = '0.5'; }
+    if (card) { card.style.transition = 'opacity 0.5s ease'; card.style.opacity = '1'; }
+  }, 1000);
+
   if (window.google) initGoogleSignIn();
   else {
     const script = document.querySelector('script[src*="accounts.google.com"]');
