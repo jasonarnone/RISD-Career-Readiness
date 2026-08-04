@@ -195,25 +195,6 @@
   }
   .ring-complete-label.visible { display: block; }
   .ring-count.hidden, .ring-total.hidden { display: none; }
-  .year-tabs {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .year-tab {
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.25);
-    color: white;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .year-tab.active {
-    font-weight: 600;
-  }
 
   /* ── SPLASH SCREEN ── */
   .splash-header {
@@ -256,24 +237,6 @@
     justify-content: center;
     padding: 12px 12px 0;
     position: relative;
-  }
-  .splash-title-overlay {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%) rotate(-13deg);
-    font-family: 'Roboto', sans-serif;
-    font-weight: 700;
-    font-style: italic;
-    font-size: clamp(28px, 8.75vw, 42px);
-    line-height: 1.25;
-    color: white;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    pointer-events: none;
-    white-space: nowrap;
-    opacity: 0;
-    z-index: 2;
   }
   .splash-ring-wrap svg {
     width: 100%;
@@ -542,37 +505,6 @@
   }
 
   /* ── SETUP SCREEN ── */
-  .setup-screen {
-    padding: 24px;
-    max-width: 480px;
-    margin: 0 auto;
-  }
-  .setup-screen h2 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
-  .setup-screen p { font-size: 14px; color: var(--text-2); margin-bottom: 20px; }
-  .setup-field { margin-bottom: 16px; }
-  .setup-field label {
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-3);
-    display: block;
-    margin-bottom: 6px;
-  }
-  .setup-field input, .setup-field textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    background: var(--bg);
-    color: var(--text);
-    outline: none;
-    font-family: monospace;
-  }
-  .setup-field input:focus, .setup-field textarea:focus { border-color: var(--risd-red-muted); }
-  .setup-field textarea { resize: vertical; min-height: 80px; font-size: 12px; }
-
   @keyframes spin {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
@@ -846,7 +778,7 @@
 
 
 <!-- LOADING OVERLAY -->
-<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:999;align-items:center;justify-content:center;flex-direction:column">
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:transparent;z-index:999;align-items:center;justify-content:center;flex-direction:column">
   <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" style="animation:spin 0.8s linear infinite">
     <path d="M 30.30 6.12 A 22 22 0 0 1 49.88 25.70" fill="none" stroke="#fd9a1a" stroke-width="5" stroke-linecap="round"/>
     <path d="M 49.88 30.30 A 22 22 0 0 1 30.30 49.88" fill="none" stroke="#5deaff" stroke-width="5" stroke-linecap="round"/>
@@ -1130,11 +1062,26 @@ let adminViewEmail = null;
    ════════════════════════════════════════════════ */
 function showLoadingOverlay() {
   const el = document.getElementById('loading-overlay');
-  if (el) { el.style.display = 'flex'; }
+  if (el) { el.style.transition = ''; el.style.opacity = '1'; el.style.display = 'flex'; }
 }
 function hideLoadingOverlay() {
   const el = document.getElementById('loading-overlay');
   if (el) { el.style.display = 'none'; }
+}
+
+// Fades the login background image and the loading spinner out together,
+// so the background stays visible for the whole time the spinner is
+// spinning, then both dissolve before the splash screen actually appears
+// — rather than the previous instant cut between the two screens.
+function fadeOutPreSplashVisuals() {
+  return new Promise(resolve => {
+    const FADE_MS = 500;
+    const bg = document.getElementById('signin-bg');
+    const overlay = document.getElementById('loading-overlay');
+    if (bg)      { bg.style.transition = 'opacity ' + FADE_MS + 'ms ease'; bg.style.opacity = '0'; }
+    if (overlay) { overlay.style.transition = 'opacity ' + FADE_MS + 'ms ease'; overlay.style.opacity = '0'; }
+    setTimeout(resolve, FADE_MS);
+  });
 }
 
 /* ════════════════════════════════════════════════
@@ -1218,6 +1165,12 @@ function signOut() {
   completedItems = {};
   closeModal('signout-modal');
   showScreen('signin-screen');
+  // The background image was faded out during the last login's transition
+  // into splash — reset it before this screen is shown again.
+  const bg = document.getElementById('signin-bg');
+  if (bg) { bg.style.transition = ''; bg.style.opacity = '1'; }
+  const card = document.getElementById('signin-card');
+  if (card) { card.style.transition = ''; card.style.opacity = '1'; }
   // bottom nav removed
   // bottom nav removed
 }
@@ -1362,7 +1315,6 @@ function buildSplashTabs() {
     btn.onclick = () => {
       currentYear = y;
       applyYearColor(y);
-      buildYearTabs();
       switchTab('checklist');
       renderChecklist();
       updateProgress();
@@ -1556,7 +1508,11 @@ function animateSplashRings() {
 
   const intervals = { 1: 360, 2: 480, 3: 620, 4: 280 };
 
-  groups.forEach((g, gi) => {
+  // Collect every ring that has anything left to animate — these share
+  // ONE turn-taking sequence below, rather than each running its own
+  // independent timer, so at most one ring is ever flashing at a time.
+  const rings = [];
+  groups.forEach(g => {
     const year = parseInt(g.getAttribute('data-year'), 10);
     if (window._revealingYear === year) return; // being revealed with its own white-flash fade instead
     const yearColor = YEAR_COLORS[year].bg;
@@ -1564,30 +1520,55 @@ function animateSplashRings() {
     const unchecked = Array.from(innerRotateGroup.querySelectorAll('path'))
       .filter(p => p.getAttribute('fill') === 'transparent');
     if (!unchecked.length) return;
-
-    let idx = 0;
-
-    function animateNext() {
-      if (gen !== window._splashAnimGen) return; // cancelled or restarted
-      if (!document.getElementById('splash-screen').classList.contains('active')) return;
-      const path = unchecked[idx];
-
-      // Flash to black, fade back to year color
-      path.style.transition = 'none';
-      path.setAttribute('stroke', '#111111');
-      setTimeout(() => {
-        if (gen !== window._splashAnimGen) return;
-        path.style.transition = 'stroke 0.5s ease';
-        path.setAttribute('stroke', yearColor);
-        setTimeout(() => { path.style.transition = ''; }, 510);
-      }, 160);
-
-      idx = (idx + 1) % unchecked.length;
-      setTimeout(animateNext, intervals[year]);
-    }
-
-    setTimeout(animateNext, gi * 120);
+    rings.push({ year, yearColor, unchecked, idx: 0 });
   });
+
+  if (!rings.length) return;
+
+  let turn = 0;
+  function nextTurn() {
+    if (gen !== window._splashAnimGen) return; // cancelled or restarted
+    if (!document.getElementById('splash-screen').classList.contains('active')) return;
+    // Skip the visual work while the app is backgrounded (screen off,
+    // another tab/app in front) — the animation is purely decorative and
+    // would otherwise keep firing style writes and draining battery.
+    // Re-checks on the next tick rather than dying, so it resumes
+    // automatically when the student comes back.
+    if (document.hidden) { setTimeout(nextTurn, 400); return; }
+
+    // Round-robin: with only one ring in play this always picks the same
+    // ring every turn, reproducing its original solo pacing exactly. With
+    // multiple rings unlocked at once, each takes its turn in sequence —
+    // never two flashing simultaneously.
+    const ring = rings[turn % rings.length];
+    const path = ring.unchecked[ring.idx];
+
+    // Flash to black, fade back to year color
+    path.style.transition = 'none';
+    path.setAttribute('stroke', '#111111');
+    setTimeout(() => {
+      if (gen !== window._splashAnimGen) return;
+      path.style.transition = 'stroke 0.5s ease';
+      path.setAttribute('stroke', ring.yearColor);
+      setTimeout(() => { path.style.transition = ''; }, 510);
+    }, 160);
+
+    ring.idx = (ring.idx + 1) % ring.unchecked.length;
+    turn++;
+
+    // Solo ring: reproduce its exact original pacing. Multiple rings
+    // sharing turns: never start the next ring's flash before this one's
+    // flash+fade (160ms delay + 500ms fade + buffer ≈ 670ms) has actually
+    // finished visually — a ring's own interval can be shorter than that,
+    // which would otherwise let two different rings' segments overlap.
+    const FLASH_CYCLE_MS = 670;
+    const delay = rings.length === 1
+      ? intervals[ring.year]
+      : Math.max(intervals[ring.year], FLASH_CYCLE_MS);
+    setTimeout(nextTurn, delay);
+  }
+
+  nextTurn();
 }
 
 // 5-point star path centered at (cx,cy); outerR = tip radius
@@ -1797,40 +1778,6 @@ function applyYearColor(y) {
 
 }
 
-function buildYearTabs() {
-  const container = document.getElementById('year-tabs');
-  if (!container) return; // year tabs removed from checklist page
-  const c = YEAR_COLORS[currentYear];
-  container.innerHTML = '';
-  [1,2,3,4].forEach(y => {
-    const d = CHECKLIST[y];
-    const isActive = y === currentYear;
-    const btn = document.createElement('button');
-    btn.className = 'year-tab' + (isActive ? ' active' : '');
-    btn.textContent = d.label;
-    if (isActive) {
-      btn.style.background = 'rgba(0,0,0,0.18)';
-      btn.style.color = c.text;
-      btn.style.borderColor = 'rgba(0,0,0,0.2)';
-      btn.style.fontWeight = '600';
-    } else {
-      btn.style.background = 'rgba(0,0,0,0.1)';
-      btn.style.color = c.text === '#ffffff' ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.55)';
-      btn.style.borderColor = 'rgba(0,0,0,0.12)';
-    }
-    btn.onclick = () => selectYear(y);
-    container.appendChild(btn);
-  });
-}
-
-function selectYear(y) {
-  currentYear = y;
-  applyYearColor(y);
-  buildYearTabs();
-  renderChecklist();
-  updateProgress();
-}
-
 /* ════════════════════════════════════════════════
    PROGRESS RING
    ════════════════════════════════════════════════ */
@@ -1973,6 +1920,9 @@ function animateYearRing() {
   function animateNext() {
     if (gen !== window._yearAnimGen) return; // cancelled or restarted
     if (!document.getElementById('student-screen').classList.contains('active')) return;
+    // Same backgrounding guard as the splash animator — decorative only,
+    // so skip the work while hidden but keep re-checking so it resumes.
+    if (document.hidden) { setTimeout(animateNext, intervals[currentYear] || 400); return; }
     const path = unchecked[idx];
 
     // Flash to fully transparent (shows year-color bg), fade back to white
@@ -2200,7 +2150,6 @@ async function apiCall(action, params = {}) {
 async function loadProgress(email) {
   document.getElementById('checklist-body').innerHTML =
     '<div class="state-msg"><div class="icon">⏳</div>Loading your progress…</div>';
-  buildYearTabs();
   try {
     const data = await apiCall('getProgress', { email });
     if (data && data.completed) completedItems = data.completed;
@@ -2237,6 +2186,7 @@ async function loadProgress(email) {
   } catch(e) {
     console.warn('Could not load progress:', e);
   }
+  await fadeOutPreSplashVisuals();
   switchTab('splash');
   resetIdleTimer();
   maybeStartOrientation();
@@ -3256,7 +3206,6 @@ const ORIENTATION_STEPS = [
       hideOrientationHole(); // remove step 3's hole before navigating — it shouldn't linger during the transition
       currentYear = 1;
       applyYearColor(1);
-      buildYearTabs();
       switchTab('checklist');
       renderChecklist();
       updateProgress();
