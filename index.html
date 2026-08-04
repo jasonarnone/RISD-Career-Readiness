@@ -930,7 +930,7 @@
 </div>
 
 <!-- ORIENTATION SPOTLIGHT (first-login guided tour) -->
-<div id="orientation-spotlight" style="display:none;position:fixed;border-radius:50%;border:5px solid white;box-shadow:0 0 0 9999px rgba(253,154,26,0.25);z-index:600;pointer-events:none;"></div>
+<div id="orientation-spotlight" style="display:none;position:fixed;border-radius:50%;border:5px solid white;box-shadow:0 0 0 9999px rgba(253,154,26,0.80);z-index:600;pointer-events:none;"></div>
 
 <div id="orientation-modal" style="display:none;position:fixed;inset:0;background:transparent;z-index:601;pointer-events:none">
   <div id="orientation-modal-card" style="background:#1a1a1a;border-radius:20px;max-width:320px;width:calc(100% - 48px);position:absolute;left:50%;box-shadow:0 24px 60px rgba(0,0,0,0.6);pointer-events:auto">
@@ -938,7 +938,7 @@
     <div style="padding:28px 24px 24px">
       <div id="orientation-title" style="font-size:17px;font-weight:600;font-family:Georgia,serif;color:white;line-height:1.4;margin-bottom:10px"></div>
       <div id="orientation-desc" style="font-size:13px;font-family:Georgia,serif;color:rgba(255,255,255,0.7);line-height:1.6"></div>
-      <button onclick="skipOrientation()" style="margin-top:16px;background:none;border:none;color:rgba(255,255,255,0.5);font-size:12px;font-family:Georgia,serif;text-decoration:underline;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent">Skip this tutorial</button>
+      <button id="orientation-skip-btn" onclick="skipOrientation()" style="margin-top:16px;background:none;border:none;color:rgba(255,255,255,0.5);font-size:12px;font-family:Georgia,serif;text-decoration:underline;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent">Skip this tutorial</button>
     </div>
   </div>
 </div>
@@ -1533,7 +1533,7 @@ function drawConcentricRings() {
       ring.setAttribute('r', (outerR + innerR) / 2);
       ring.setAttribute('fill', 'none');
       ring.setAttribute('stroke', c.bg);
-      ring.setAttribute('stroke-width', '2');
+      ring.setAttribute('stroke-width', '4');
       ring.setAttribute('opacity', '0.45');
       yearGroup.appendChild(ring);
     } else if (allDone) {
@@ -2154,13 +2154,21 @@ async function toggleItem(itemId, el) {
 
   // Trigger the hero zoom on the exact moment this year becomes complete
   // (checking only, never on uncheck) — fully removable via the flag above.
-  if (ENABLE_YEAR_COMPLETE_HERO_ZOOM && !wasChecked && !wasCurrentYearComplete) {
+  // Suppressed during orientation: step 5 completes this same task
+  // programmatically, and if that happens to also finish the whole year
+  // (e.g. after repeated testing), the hero-zoom takeover would hijack
+  // the screen mid-tour.
+  if (ENABLE_YEAR_COMPLETE_HERO_ZOOM && !wasChecked && !wasCurrentYearComplete && !_orientationActive) {
     const isCompleteNow = currentYearItems.every(item => completedItems[item.id]);
     if (isCompleteNow) playYearCompleteHeroZoom(currentYear);
   }
 
-  // Celebrate newly unlocked years (checking only, never on uncheck)
-  if (!wasChecked) {
+  // Celebrate newly unlocked years (checking only, never on uncheck).
+  // Same suppression as above — the unlock notice's own dark backdrop
+  // would otherwise render on top of (and completely dominate) the
+  // orientation spotlight if this same task-completion also happens to
+  // cross a real 50% unlock threshold.
+  if (!wasChecked && !_orientationActive) {
     for (const y of [2, 3, 4]) {
       if (!unlockedBefore[y] && isYearUnlocked(y)) {
         // The ring/button reveal animation happens the next time the
@@ -2971,6 +2979,7 @@ function dimOtherSplashElements(year) {
   const svg     = document.getElementById('splash-ring-svg');
   const tabs    = document.getElementById('splash-year-tabs');
   const hint    = document.getElementById('splash-hint');
+  const arcText = svg ? svg.getElementById('ring-arc-text') : null; // "Complete tasks to close your rings..."
   const others  = [];
 
   // Every other ring — locked, complete, or in-progress — is wrapped in
@@ -2987,6 +2996,7 @@ function dimOtherSplashElements(year) {
     });
   }
   if (hint) others.push(hint);
+  if (arcText) others.push(arcText); // rest state is always opaque, so the generic clear-to-'' below is correct for it
 
   // Hide everything else immediately — no transition — so the whole
   // rest of the screen reads as black (matching the background), leaving
@@ -3004,7 +3014,21 @@ function dimOtherSplashElements(year) {
   setTimeout(() => {
     others.forEach(el => { el.style.transition = 'opacity 2s ease'; el.style.opacity = '1'; });
     setTimeout(() => {
-      others.forEach(el => { el.style.transition = ''; el.style.opacity = ''; });
+      others.forEach(el => {
+        el.style.transition = '';
+        if (el === hint) {
+          // The hint's true rest state is opacity:0 — it only becomes
+          // visible via its own 5s-then-pulse timer, never by sitting at
+          // a bare cleared inline style (which would default to 1 and
+          // leave it stuck visible with no timer left to hide it again).
+          el.style.opacity = '0';
+          window._splashHintTimer = setTimeout(() => {
+            el.style.animation = 'splashHintPulse 2s ease-in-out infinite';
+          }, 5000);
+        } else {
+          el.style.opacity = '';
+        }
+      });
     }, 2050);
   }, 1000);
 }
@@ -3088,30 +3112,18 @@ function revealYearButton(year) {
 const ENABLE_FIRST_LOGIN_ORIENTATION = true;
 
 let _orientationStepIndex = 0;
-let _orientationFirstReveal = true; // only step 1 "grows from nothing"
 let _orientationActive = false; // true for the whole tour — suppresses the idle prompt and splash hint
 
-function hasSeenOrientation(email) {
-  if (!email) return true; // no email — treat as already seen, don't block anything
-  try { return !!localStorage.getItem('orientation_seen_' + email.toLowerCase()); }
-  catch (e) { return true; } // localStorage unavailable — don't force the tour every load
-}
-
-function markOrientationSeen() {
-  const email = (currentUser && currentUser.email) || '';
-  if (!email) return;
-  try { localStorage.setItem('orientation_seen_' + email.toLowerCase(), '1'); } catch (e) { /* ignore */ }
-}
-
-// Called right after the student's first splash screen of the session loads
+// Called right after the student's first splash screen of the session
+// loads. Re-triggers on every login until the first real task is done —
+// whether that happens by completing the tour (which auto-checks it in
+// step 5) or by the student completing it themselves without the tour.
 function maybeStartOrientation() {
   if (!ENABLE_FIRST_LOGIN_ORIENTATION) return;
-  const email = (currentUser && currentUser.email) || '';
-  if (hasSeenOrientation(email)) return;
+  if (completedItems[ONBOARD_TASK_ID]) return; // first task already done — nothing to guide them through
 
   _orientationActive = true;
   _orientationStepIndex = 0;
-  _orientationFirstReveal = true;
 
   // The idle "What will you work on next?" prompt must never interrupt the
   // tour — cancel anything already pending; resetIdleTimer's own guard
@@ -3204,13 +3216,12 @@ function orientationYearRingSegmentHole(segmentIndex) {
 }
 
 // ── Spotlight hole animation ──
-function showOrientationHole(target) {
+function showOrientationHole(target, growFromNothing) {
   const hole = document.getElementById('orientation-spotlight');
   if (!hole || !target) return;
 
-  if (_orientationFirstReveal) {
+  if (growFromNothing) {
     // Start small, centered on the target, then grow into place over 0.5s
-    _orientationFirstReveal = false;
     const cx = target.left + target.width / 2;
     const cy = target.top + target.height / 2;
     hole.style.transition = 'none';
@@ -3242,12 +3253,14 @@ function hideOrientationHole() {
   if (hole) { hole.style.transition = ''; hole.style.display = 'none'; }
 }
 
-function showOrientationModal(title, desc, holeRect) {
+function showOrientationModal(title, desc, holeRect, hideSkip) {
   const modal = document.getElementById('orientation-modal');
   const card = document.getElementById('orientation-modal-card');
   if (!modal || !card) return;
   document.getElementById('orientation-title').textContent = title;
   document.getElementById('orientation-desc').textContent = desc;
+  const skipBtn = document.getElementById('orientation-skip-btn');
+  if (skipBtn) skipBtn.style.display = hideSkip ? 'none' : '';
   modal.style.display = 'block';
 
   card.style.transform = 'translateX(-50%)';
@@ -3285,14 +3298,15 @@ function hideOrientationModalOnly() {
 // ── The five orientation steps ──
 const ORIENTATION_STEPS = [
   {
+    growReveal: true, // very first hole of the tour — grows in from nothing
     getTarget: () => orientationSplashRingHole(68), // breathing room past Year 1's ring (52), still covers Year 2 (88)
-    title: 'This is your first year ring of tasks.',
-    desc: 'Complete a task to fill a box. Complete all tasks to close this ring!',
+    title: 'This is your Year 1 ring',
+    desc: 'Complete all Year 1 tasks to close your ring!',
   },
   {
     getTarget: () => orientationSplashRingHole(96), // covers Year 2's ring (88), still short of Year 3 (126)
-    title: 'This ring is currently locked.',
-    desc: 'Complete 50% of Year 1 tasks to unlock it.',
+    title: 'The blue ring for Year 2 is locked',
+    desc: 'Complete 50% of Year 1 tasks to unlock Year 2 tasks.',
   },
   {
     getTarget: () => {
@@ -3300,11 +3314,12 @@ const ORIENTATION_STEPS = [
       const btn = tabs ? tabs.children[0] : null; // Year 1 button
       return orientationElementHole(btn, 10);
     },
-    title: 'This is the first year button.',
-    desc: 'Start your Career Ready journey!',
+    title: 'This is the Year 1 button.',
+    desc: "Press this button to begin your Career Ready tasks!",
   },
   {
     beforeShow: (done) => {
+      hideOrientationHole(); // remove step 3's hole before navigating — it shouldn't linger during the transition
       currentYear = 1;
       applyYearColor(1);
       buildYearTabs();
@@ -3313,12 +3328,13 @@ const ORIENTATION_STEPS = [
       updateProgress();
       setTimeout(done, 500);
     },
+    growReveal: true, // hole zooms into place fresh, same grow effect as step 1, rather than repositioning
     getTarget: () => {
       const firstItem = CHECKLIST[1].seasons.flatMap(s => s.items)[0];
       return orientationCheckboxHole(firstItem.id);
     },
     title: 'This is your first task.',
-    desc: 'You completed your first task and you deserve credit!',
+    desc: "You completed your first task by using this app. Check off the task now!",
   },
   {
     beforeShow: (done) => {
@@ -3329,7 +3345,8 @@ const ORIENTATION_STEPS = [
     },
     getTarget: () => orientationYearRingSegmentHole(0),
     title: 'You completed your first task.',
-    desc: 'Check off more tasks to fill in your Career Ready rings!',
+    desc: 'Check off more tasks to fill in your Year 1 ring!',
+    hideSkip: true, // tour is effectively done at this point — skipping no longer makes sense
   },
 ];
 
@@ -3340,8 +3357,8 @@ function runOrientationStep(i) {
   function positionAndShow() {
     const target = step.getTarget();
     if (!target) { runOrientationStep(i + 1); return; } // target not found — skip this step safely
-    showOrientationHole(target);
-    setTimeout(() => { showOrientationModal(step.title, step.desc, target); }, 500);
+    showOrientationHole(target, !!step.growReveal);
+    setTimeout(() => { showOrientationModal(step.title, step.desc, target, !!step.hideSkip); }, 500);
   }
 
   if (step.beforeShow) step.beforeShow(positionAndShow);
@@ -3362,7 +3379,6 @@ function skipOrientation() {
 function endOrientation() {
   hideOrientationModalOnly();
   hideOrientationHole();
-  markOrientationSeen();
   _orientationActive = false;
   resetIdleTimer(); // resume normal idle tracking from this point forward
 }
