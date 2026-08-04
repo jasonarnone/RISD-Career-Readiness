@@ -58,7 +58,14 @@
     background: var(--bg);
     z-index: 1;
   }
-  #splash-screen.active { background: #111; }
+  #splash-screen.active {
+    background: #111;
+    min-height: 100vh;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 80px;
+  }
   #student-screen.active { background: #111; display: flex !important; flex-direction: column; overflow: hidden !important; }
 
   /* ── HEADER ── */
@@ -100,8 +107,8 @@
   }
 
   /* ── SIGN IN ── */
-  #signin-screen {
-    display: flex;
+  #signin-screen.active {
+    display: flex !important;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
@@ -209,14 +216,6 @@
   }
 
   /* ── SPLASH SCREEN ── */
-  #splash-screen {
-    background: #111;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 0 80px;
-  }
   .splash-header {
     width: 100%;
     padding: 20px 20px 0;
