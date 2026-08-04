@@ -594,7 +594,7 @@
 
 <!-- SIGN IN SCREEN -->
 <div id="signin-screen" class="screen active">
-  <div id="signin-bg" style="position:absolute;inset:0;background-image:url('https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%201.jpg');background-size:cover;background-position:center;background-repeat:no-repeat;opacity:1;"></div>
+  <div id="signin-bg" style="position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;opacity:1;"></div>
   <div class="signin-card" id="signin-card" style="opacity:0;position:relative;z-index:2;">
     <h2>Career Ready</h2>
     <p style="font-size:14px;color:rgba(255,255,255,0.75);line-height:1.65;margin-bottom:20px;text-align:left">In order to help you navigate your academic journey through RISD with career readiness on your mind, the RISD Career Center created checklists for each academic grade level.</p>
@@ -3403,10 +3403,35 @@ function onUserActivity() {
 /* ════════════════════════════════════════════════
    INIT
    ════════════════════════════════════════════════ */
+
+// Force a fresh reload if this page is being restored from the browser's
+// back-forward cache (or a suspended/resumed home-screen-app instance)
+// rather than genuinely loaded — this is exactly how a saved-to-home-screen
+// app can silently show a stale version indefinitely without ever
+// re-fetching anything. Deliberately does NOT use the broader
+// visibilitychange event, which would also fire on routine screen
+// lock/unlock during active use and interrupt whatever the student is
+// doing mid-task.
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) location.reload();
+});
+
 window.addEventListener('load', () => {
-  // Login screen: let the background image sit at full vibrancy for a
-  // beat, then dim it to 50% while the login content fades in on top —
-  // one coordinated reveal moment rather than everything appearing at once.
+  // Login screen: randomly choose one of the two background images each
+  // time this screen loads, then let it sit at full vibrancy for a beat
+  // before dimming to 50% while the login content fades in on top — one
+  // coordinated reveal moment rather than everything appearing at once.
+  const SIGNIN_BACKGROUNDS = [
+    'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%201.jpg',
+    'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%202.jpg',
+    'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%203.jpg',
+  ];
+  const signinBgEl = document.getElementById('signin-bg');
+  if (signinBgEl) {
+    const chosen = SIGNIN_BACKGROUNDS[Math.floor(Math.random() * SIGNIN_BACKGROUNDS.length)];
+    signinBgEl.style.backgroundImage = "url('" + chosen + "')";
+  }
+
   setTimeout(() => {
     const bg = document.getElementById('signin-bg');
     const card = document.getElementById('signin-card');
