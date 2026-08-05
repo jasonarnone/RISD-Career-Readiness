@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 4, 2026 — 9:35 PM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 4, 2026 — 9:51 PM ET</p>
   </div>
 </div>
 
@@ -789,14 +789,7 @@
 <!-- YEAR <-> SPLASH SCREEN TRANSITION (normal navigation only — never during
      orientation, unlock-reveal, or hero-zoom sequences) -->
 <div id="screen-transition-black" style="display:none;opacity:0;position:fixed;inset:0;z-index:997;background:#000"></div>
-<div id="screen-transition-overlay" style="display:none;opacity:0;position:fixed;inset:0;z-index:998;background-size:cover;background-position:center;background-repeat:no-repeat;align-items:center;justify-content:center">
-  <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" style="animation:spin 0.8s linear infinite">
-    <path d="M 30.30 6.12 A 22 22 0 0 1 49.88 25.70" fill="none" stroke="#fd9a1a" stroke-width="5" stroke-linecap="round"/>
-    <path d="M 49.88 30.30 A 22 22 0 0 1 30.30 49.88" fill="none" stroke="#5deaff" stroke-width="5" stroke-linecap="round"/>
-    <path d="M 25.70 49.88 A 22 22 0 0 1 6.12 30.30" fill="none" stroke="#f1369f" stroke-width="5" stroke-linecap="round"/>
-    <path d="M 6.12 25.70 A 22 22 0 0 1 25.70 6.12" fill="none" stroke="#bdf452" stroke-width="5" stroke-linecap="round"/>
-  </svg>
-</div>
+<div id="screen-transition-overlay" style="display:none;opacity:0;position:fixed;inset:0;z-index:998;background-size:cover;background-position:center;background-repeat:no-repeat;align-items:center;justify-content:center"></div>
 
 <!-- NOTICE MODAL (lock / unlock messages) -->
 <div id="notice-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:600;align-items:center;justify-content:center;padding:24px">
@@ -824,7 +817,7 @@
 </div>
 
 <!-- IDLE TASK PROMPT -->
-<div id="idle-modal" style="display:none;opacity:0;position:fixed;inset:0;background:transparent;z-index:1000;align-items:center;justify-content:center;padding:24px">
+<div id="idle-modal" style="display:none;opacity:0;position:fixed;inset:0;background:transparent;z-index:1000;align-items:flex-end;justify-content:center;padding:24px">
   <div style="background:#1a1a1a;border-radius:20px;max-width:340px;width:100%;position:relative;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.6)">
 
     <!-- Close button -->
@@ -3308,7 +3301,7 @@ function endOrientation() {
 let _idleTimer = null;
 let _idleTask  = null;
 let _idleYear  = null;
-const IDLE_SECONDS = 90; // tripled from 30s
+const IDLE_SECONDS = 30;
 
 function resetIdleTimer() {
   clearTimeout(_idleTimer);
@@ -3460,17 +3453,27 @@ window.addEventListener('load', () => {
     'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%203.jpg',
   ];
   const signinBgEl = document.getElementById('signin-bg');
-  if (signinBgEl) {
-    const chosen = SIGNIN_BACKGROUNDS[Math.floor(Math.random() * SIGNIN_BACKGROUNDS.length)];
-    signinBgEl.style.backgroundImage = "url('" + chosen + "')";
-  }
+  const chosen = SIGNIN_BACKGROUNDS[Math.floor(Math.random() * SIGNIN_BACKGROUNDS.length)];
 
-  setTimeout(() => {
-    const bg = document.getElementById('signin-bg');
-    const card = document.getElementById('signin-card');
-    if (bg)   { bg.style.transition = 'opacity 0.5s ease';   bg.style.opacity = '0.5'; }
-    if (card) { card.style.transition = 'opacity 0.5s ease'; card.style.opacity = '1'; }
-  }, 1000);
+  // Preload before starting the reveal sequence — without this, the 1s
+  // timer below can fire before the image has actually finished
+  // downloading, so it dims/reveals a still-blank background depending
+  // on connection speed. Same fix already applied to the idle-prompt
+  // backdrop and the (now-unused) screen-transition overlay.
+  const preloadSigninBg = new Image();
+  preloadSigninBg.onload = startSigninReveal;
+  preloadSigninBg.onerror = startSigninReveal; // don't hang forever if it fails to load
+  preloadSigninBg.src = chosen;
+
+  function startSigninReveal() {
+    if (signinBgEl) signinBgEl.style.backgroundImage = "url('" + chosen + "')";
+    setTimeout(() => {
+      const bg = document.getElementById('signin-bg');
+      const card = document.getElementById('signin-card');
+      if (bg)   { bg.style.transition = 'opacity 0.5s ease';   bg.style.opacity = '0.5'; }
+      if (card) { card.style.transition = 'opacity 0.5s ease'; card.style.opacity = '1'; }
+    }, 1000);
+  }
 
   if (window.google) initGoogleSignIn();
   else {
