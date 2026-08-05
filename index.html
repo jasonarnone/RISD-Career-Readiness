@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 7:22 AM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 8:33 AM ET</p>
   </div>
 </div>
 
@@ -1068,6 +1068,16 @@ function showLoadingOverlay() {
   const el = document.getElementById('loading-overlay');
   if (el) { el.style.transition = ''; el.style.opacity = '1'; el.style.display = 'flex'; }
 }
+// Hides the login form/card and brightens the background back to full —
+// so during the spinner/loading phase, only the background image and the
+// rotating ring are visible, no UI controls. Shared by both the demo and
+// live sign-in paths.
+function hideLoginUIForLoading() {
+  const card = document.getElementById('signin-card');
+  const bg = document.getElementById('signin-bg');
+  if (card) { card.style.transition = 'opacity 0.3s ease'; card.style.opacity = '0'; }
+  if (bg)   { bg.style.transition = 'opacity 0.3s ease'; bg.style.opacity = '1'; }
+}
 function hideLoadingOverlay() {
   const el = document.getElementById('loading-overlay');
   if (el) { el.style.display = 'none'; }
@@ -1132,6 +1142,7 @@ function demoSignIn() {
     return;
   }
   const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  hideLoginUIForLoading();
   showLoadingOverlay();
   signInUser(email, name, null);
 }
