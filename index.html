@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 9:36 AM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 9:48 AM ET</p>
   </div>
 </div>
 
@@ -843,7 +843,7 @@
       <a href="mailto:risdcareers@risd.edu?cc=jarnone@risd.edu&subject=Support%3A%20RISD%20Career%20Readiness%20Tracker"
          class="btn btn-ghost" style="text-decoration:none;display:flex;align-items:center;justify-content:center">Help / Feedback</a>
       <button id="save-home-screen-btn" class="btn btn-ghost" onclick="saveToHomeScreen()" style="display:none">Save to Home Screen</button>
-      <button class="btn btn-ghost" onclick="location.reload()">Refresh app</button>
+      <button class="btn btn-ghost" onclick="hardRefreshApp()">Refresh app</button>
       <button class="btn btn-ghost" onclick="signOut()">Sign out</button>
       <button class="btn btn-primary" onclick="closeModal('signout-modal')">Stay signed in</button>
     </div>
@@ -1117,6 +1117,7 @@ const SCREEN_TRANSITION_BACKGROUNDS = [
   'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%2012.jpg',
   'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%2013.jpg',
   'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%2014.jpg',
+  'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%2015.jpg',
 ];
 
 // Shared fade helper used by the idle-prompt backdrop sequence below.
@@ -3500,7 +3501,7 @@ function onUserActivity() {
 // lock/unlock during active use and interrupt whatever the student is
 // doing mid-task.
 window.addEventListener('pageshow', (event) => {
-  if (event.persisted) location.reload();
+  if (event.persisted) hardRefreshApp();
 });
 
 // ── SAVE TO HOME SCREEN ──────────────────────────────────────
@@ -3526,6 +3527,18 @@ window.addEventListener('beforeinstallprompt', (e) => {
   const btn = document.getElementById('save-home-screen-btn');
   if (btn && !isAlreadyInstalled()) btn.style.display = '';
 });
+
+// A plain location.reload() doesn't reliably bypass the browser's (or
+// GitHub Pages' CDN) cache — it's more of a suggestion, and modern
+// browsers no longer honor the old reload(true) "force" flag at all.
+// Navigating to a URL with an ever-changing query string forces a
+// genuinely fresh fetch every time, since it's treated as a completely
+// different resource rather than a cached one.
+function hardRefreshApp() {
+  const url = new URL(window.location.href);
+  url.searchParams.set('_refresh', Date.now());
+  window.location.href = url.toString();
+}
 
 function saveToHomeScreen() {
   if (isAlreadyInstalled()) { toast('Already saved to your home screen!'); return; }
@@ -3560,6 +3573,7 @@ window.addEventListener('load', () => {
     'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%201.jpg',
     'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%202.jpg',
     'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%203.jpg',
+    'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%204.jpg',
   ];
   const signinBgEl = document.getElementById('signin-bg');
   const chosen = SIGNIN_BACKGROUNDS[Math.floor(Math.random() * SIGNIN_BACKGROUNDS.length)];
