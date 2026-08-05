@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 6:50 AM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 7:22 AM ET</p>
   </div>
 </div>
 
@@ -1190,16 +1190,12 @@ function signOut() {
   completedItems = {};
   closeModal('signout-modal');
   showScreen('signin-screen');
-  // The background/card were faded during the last login's transition
-  // into splash — reset both to their true starting state (background
-  // fully bright, card hidden), then replay the exact same reveal
-  // sequence used on a cold page load, rather than just snapping back
-  // to a static "already revealed" state.
+  // The background image was faded out during the last login's transition
+  // into splash — reset it before this screen is shown again.
   const bg = document.getElementById('signin-bg');
   if (bg) { bg.style.transition = ''; bg.style.opacity = '1'; }
   const card = document.getElementById('signin-card');
-  if (card) { card.style.transition = ''; card.style.opacity = '0'; }
-  playSigninReveal();
+  if (card) { card.style.transition = ''; card.style.opacity = '1'; }
   // bottom nav removed
   // bottom nav removed
 }
@@ -1250,24 +1246,6 @@ function switchTab(tab) {
   }
 }
 
-// Forces every full-screen overlay closed, regardless of what state it
-// was left in — a screen switch should never leave any of these visible,
-// even if some interruption skipped their normal close sequence.
-function hideAllOverlays() {
-  ['loading-overlay', 'screen-transition-black', 'screen-transition-overlay',
-   'notice-modal', 'orientation-modal', 'idle-modal', 'orientation-spotlight'
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.transition = '';
-    el.style.opacity = '0';
-    el.style.display = 'none';
-  });
-  // Generic catch for any modal using the shared .modal-bg class (e.g.
-  // sign-out confirmation) — covers future modals built the same way too.
-  document.querySelectorAll('.modal-bg').forEach(el => { el.style.display = 'none'; });
-}
-
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const screen = document.getElementById(id);
@@ -1275,9 +1253,8 @@ function showScreen(id) {
   // Always scroll the newly shown screen to top
   screen.scrollTop = 0;
   window.scrollTo(0, 0);
-  // Hide every overlay unconditionally — catches any that got left
-  // visible by an interrupted sequence, not just the loading spinner.
-  hideAllOverlays();
+  // Hide loading overlay once a screen is ready
+  hideLoadingOverlay();
   // Hide splash hint + cancel ring animations for screens we're leaving.
   // Cancellation uses generation tokens: bumping the counter makes any
   // pending timer callbacks no-op, with no per-tick bookkeeping to leak.
@@ -3466,12 +3443,11 @@ window.addEventListener('pageshow', (event) => {
   if (event.persisted) location.reload();
 });
 
-// Login screen reveal: randomly choose one of the three background images,
-// let it sit at full vibrancy for a beat, then dim to 50% while the login
-// content fades in on top. Callable from anywhere the login screen becomes
-// visible again — not just the very first cold page load — since
-// signOut() also returns here without a genuine page reload.
-function playSigninReveal() {
+window.addEventListener('load', () => {
+  // Login screen: randomly choose one of the two background images each
+  // time this screen loads, then let it sit at full vibrancy for a beat
+  // before dimming to 50% while the login content fades in on top — one
+  // coordinated reveal moment rather than everything appearing at once.
   const SIGNIN_BACKGROUNDS = [
     'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%201.jpg',
     'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%202.jpg',
@@ -3499,10 +3475,6 @@ function playSigninReveal() {
       if (card) { card.style.transition = 'opacity 0.5s ease'; card.style.opacity = '1'; }
     }, 1000);
   }
-}
-
-window.addEventListener('load', () => {
-  playSigninReveal();
 
   if (window.google) initGoogleSignIn();
   else {
