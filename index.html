@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 8:33 AM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 9:24 AM ET</p>
   </div>
 </div>
 
@@ -842,9 +842,26 @@
     <div class="modal-actions">
       <a href="mailto:risdcareers@risd.edu?cc=jarnone@risd.edu&subject=Support%3A%20RISD%20Career%20Readiness%20Tracker"
          class="btn btn-ghost" style="text-decoration:none;display:flex;align-items:center;justify-content:center">Help / Feedback</a>
+      <button id="save-home-screen-btn" class="btn btn-ghost" onclick="saveToHomeScreen()" style="display:none">Save to Home Screen</button>
       <button class="btn btn-ghost" onclick="location.reload()">Refresh app</button>
       <button class="btn btn-ghost" onclick="signOut()">Sign out</button>
       <button class="btn btn-primary" onclick="closeModal('signout-modal')">Stay signed in</button>
+    </div>
+  </div>
+</div>
+
+<!-- iOS "ADD TO HOME SCREEN" INSTRUCTIONS (iOS has no programmatic install
+     trigger — Apple only allows the user's own Share-menu action) -->
+<div class="modal-bg" id="ios-install-modal">
+  <div class="modal">
+    <h3>Save to Home Screen</h3>
+    <p style="text-align:left;line-height:1.7">
+      1. Tap the <strong>Share</strong> button <span style="display:inline-block;border:1.5px solid currentColor;border-radius:4px;padding:1px 5px;font-size:13px">&#8593;&#9633;</span> in Safari's toolbar<br>
+      2. Scroll down and tap <strong>"Add to Home Screen"</strong><br>
+      3. Tap <strong>"Add"</strong> in the top-right corner
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModal('ios-install-modal')">Got it</button>
     </div>
   </div>
 </div>
@@ -1821,7 +1838,7 @@ function applyYearColor(y) {
 /* ════════════════════════════════════════════════
    PROGRESS RING
    ════════════════════════════════════════════════ */
-function updateProgress() {
+function updateProgress(justCompletedId) {
   applyYearColor(currentYear);
   const yearData = CHECKLIST[currentYear];
   const all = yearData.seasons.flatMap(s => s.items);
@@ -1925,16 +1942,41 @@ function updateProgress() {
       const outerR = 92, innerR = 60;
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', makeArcPath(startDeg, endDeg, outerR, innerR));
-      path.setAttribute('fill', isDone ? '#111111' : 'transparent');
       path.setAttribute('stroke', 'white');
       path.setAttribute('stroke-width', '1');
-      segGroup.appendChild(path);
+
+      if (item.id === justCompletedId) {
+        // Flash white, then fade down to the normal completed (dark) fill
+        path.setAttribute('fill', 'white');
+        segGroup.appendChild(path);
+        requestAnimationFrame(() => {
+          path.style.transition = 'fill 0.5s ease';
+          path.setAttribute('fill', '#111111');
+          setTimeout(() => { path.style.transition = ''; }, 550);
+        });
+      } else {
+        path.setAttribute('fill', isDone ? '#111111' : 'transparent');
+        segGroup.appendChild(path);
+      }
     });
     svg.appendChild(segGroup);
   }
 
   // Start highlight animation on the year ring
   animateYearRing();
+
+  // Quick punchy "pop" on the whole ring when a task was just completed:
+  // scale up 10% fast, then settle back down slower.
+  if (justCompletedId) {
+    svg.style.transformOrigin = '50% 50%';
+    svg.style.transition = 'transform 0.1s ease-out';
+    svg.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+      svg.style.transition = 'transform 0.5s ease-out';
+      svg.style.transform = 'scale(1)';
+      setTimeout(() => { svg.style.transition = ''; }, 550);
+    }, 100);
+  }
 }
 
 /* ════════════════════════════════════════════════
@@ -2058,7 +2100,7 @@ async function toggleItem(itemId, el) {
   }
 
   el.classList.toggle('done', !wasChecked);
-  updateProgress();
+  updateProgress(!wasChecked ? itemId : null);
 
   // Trigger the hero zoom on the exact moment this year becomes complete
   // (checking only, never on uncheck) — fully removable via the flag above.
@@ -3454,7 +3496,55 @@ window.addEventListener('pageshow', (event) => {
   if (event.persisted) location.reload();
 });
 
+// ── SAVE TO HOME SCREEN ──────────────────────────────────────
+// Android/Chrome exposes a real, one-tap programmatic install trigger
+// (beforeinstallprompt). iOS Safari has no equivalent API at all — Apple
+// only allows the install action via the user's own Share-menu tap, so
+// the best we can do there is device-aware, correct instructions rather
+// than a fake "smart" button that can't actually trigger anything.
+let _deferredInstallPrompt = null;
+
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isAlreadyInstalled() {
+  return window.navigator.standalone === true ||
+         (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  const btn = document.getElementById('save-home-screen-btn');
+  if (btn && !isAlreadyInstalled()) btn.style.display = '';
+});
+
+function saveToHomeScreen() {
+  if (isAlreadyInstalled()) { toast('Already saved to your home screen!'); return; }
+
+  if (_deferredInstallPrompt) {
+    // Android/Chrome (or any browser that fired beforeinstallprompt):
+    // real native install flow, one tap.
+    _deferredInstallPrompt.prompt();
+    _deferredInstallPrompt.userChoice.then(() => { _deferredInstallPrompt = null; });
+  } else if (isIOSDevice()) {
+    // No programmatic trigger exists on iOS — show the real steps instead.
+    openModal('ios-install-modal');
+  } else {
+    toast('Look for "Add to Home Screen" or "Install app" in your browser\'s menu.');
+  }
+}
+
 window.addEventListener('load', () => {
+  // Show the button on iOS immediately (there's no async event to wait
+  // for there, unlike beforeinstallprompt on Android) — unless it's
+  // already installed, in which case there's nothing to offer.
+  if (isIOSDevice() && !isAlreadyInstalled()) {
+    const btn = document.getElementById('save-home-screen-btn');
+    if (btn) btn.style.display = '';
+  }
+
   // Login screen: randomly choose one of the two background images each
   // time this screen loads, then let it sit at full vibrancy for a beat
   // before dimming to 50% while the login content fades in on top — one
