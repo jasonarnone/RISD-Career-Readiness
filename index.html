@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 5:32 AM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 6:36 AM ET</p>
   </div>
 </div>
 
@@ -3084,6 +3084,19 @@ function maybeStartOrientation() {
   }
 
   runOrientationStep(0);
+
+  // Absolute last-resort safety net: no matter what goes wrong above —
+  // an exception the try/catches didn't anticipate, a step that never
+  // calls done(), anything — the screen can never be left blocked
+  // longer than this. A real 5-step tour finishes in well under 20s even
+  // with every hold and fade; 20s of no progress means something is
+  // stuck, not slow.
+  setTimeout(() => {
+    if (_orientationActive) {
+      console.warn('Orientation did not complete within 20s — force-ending to restore normal interaction.');
+      endOrientation();
+    }
+  }, 20000);
 }
 
 // ── Geometry helpers: real on-screen rects for each spotlight target ──
@@ -3298,14 +3311,31 @@ function runOrientationStep(i) {
   const step = ORIENTATION_STEPS[i];
 
   function positionAndShow() {
-    const target = step.getTarget();
-    if (!target) { runOrientationStep(i + 1); return; } // target not found — skip this step safely
-    showOrientationHole(target, !!step.growReveal);
-    setTimeout(() => { showOrientationModal(step.title, step.desc, target, !!step.hideSkip); }, 500);
+    try {
+      const target = step.getTarget();
+      if (!target) { runOrientationStep(i + 1); return; } // target not found — skip this step safely
+      showOrientationHole(target, !!step.growReveal);
+      setTimeout(() => {
+        try {
+          showOrientationModal(step.title, step.desc, target, !!step.hideSkip);
+        } catch (e) {
+          console.warn('Orientation step ' + i + ' failed while showing modal — ending tour safely:', e);
+          endOrientation();
+        }
+      }, 500);
+    } catch (e) {
+      console.warn('Orientation step ' + i + ' failed — ending tour safely instead of leaving the screen blocked:', e);
+      endOrientation();
+    }
   }
 
-  if (step.beforeShow) step.beforeShow(positionAndShow);
-  else positionAndShow();
+  try {
+    if (step.beforeShow) step.beforeShow(positionAndShow);
+    else positionAndShow();
+  } catch (e) {
+    console.warn('Orientation step ' + i + ' beforeShow failed — ending tour safely:', e);
+    endOrientation();
+  }
 }
 
 // Bound to the modal's ✕ button — advances to the next step
