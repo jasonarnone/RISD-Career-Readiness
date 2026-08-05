@@ -538,6 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 1:16 AM (server time)</p>
   </div>
 </div>
 
@@ -787,6 +788,7 @@
 
 <!-- YEAR <-> SPLASH SCREEN TRANSITION (normal navigation only — never during
      orientation, unlock-reveal, or hero-zoom sequences) -->
+<div id="screen-transition-black" style="display:none;opacity:0;position:fixed;inset:0;z-index:997;background:#000"></div>
 <div id="screen-transition-overlay" style="display:none;opacity:0;position:fixed;inset:0;z-index:998;background-size:cover;background-position:center;background-repeat:no-repeat;align-items:center;justify-content:center">
   <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" style="animation:spin 0.8s linear infinite">
     <path d="M 30.30 6.12 A 22 22 0 0 1 49.88 25.70" fill="none" stroke="#fd9a1a" stroke-width="5" stroke-linecap="round"/>
@@ -1098,30 +1100,63 @@ const SCREEN_TRANSITION_BACKGROUNDS = [
 ];
 
 function playScreenTransition(navigateFn) {
-  const el = document.getElementById('screen-transition-overlay');
-  if (!el) { navigateFn(); return; }
+  const black = document.getElementById('screen-transition-black');
+  const img = document.getElementById('screen-transition-overlay');
+  if (!black || !img) { navigateFn(); return; }
 
-  const FADE_MS = 300; // fade in 300ms, hold ~400ms while navigating, fade out 300ms — ~1s total
+  const FADE_MS = 500;
+  const HOLD_MS = 1000;
   const chosen = SCREEN_TRANSITION_BACKGROUNDS[Math.floor(Math.random() * SCREEN_TRANSITION_BACKGROUNDS.length)];
-  el.style.backgroundImage = "url('" + chosen + "')";
-  el.style.transition = 'none';
-  el.style.display = 'flex';
-  el.style.opacity = '0';
-  void el.getBoundingClientRect(); // force reflow before animating away from this state
 
-  requestAnimationFrame(() => {
-    el.style.transition = 'opacity ' + FADE_MS + 'ms ease';
-    el.style.opacity = '1';
-  });
+  // Preload the chosen image BEFORE starting anything visual. Without
+  // this, the fade-in could complete before the image has actually
+  // finished downloading over the network — showing a blank/inconsistent
+  // result depending on connection speed, which is exactly what caused
+  // the glitchy, barely-visible behavior.
+  const preload = new Image();
+  preload.onload = startSequence;
+  preload.onerror = startSequence; // don't get stuck waiting if it fails to load at all
+  preload.src = chosen;
 
-  setTimeout(() => {
-    navigateFn(); // actual screen switch happens while fully covered
-    setTimeout(() => {
-      el.style.transition = 'opacity ' + FADE_MS + 'ms ease';
-      el.style.opacity = '0';
-      setTimeout(() => { el.style.display = 'none'; }, FADE_MS + 50);
-    }, 400);
-  }, FADE_MS);
+  function fade(el, toOpacity, ms) {
+    return new Promise(resolve => {
+      el.style.transition = 'opacity ' + ms + 'ms ease';
+      el.style.opacity = String(toOpacity);
+      setTimeout(resolve, ms);
+    });
+  }
+
+  async function startSequence() {
+    // Stage 1: fade the CURRENT screen to black (0.5s)
+    black.style.transition = 'none';
+    black.style.display = 'block';
+    black.style.opacity = '0';
+    void black.getBoundingClientRect(); // force reflow before animating
+    await fade(black, 1, FADE_MS);
+
+    // Fully black now — do the actual navigation, completely hidden
+    navigateFn();
+
+    // Stage 2: fade IN the full-screen image + rotating ring (0.5s).
+    // Image is already preloaded, so this can't show blank/incomplete.
+    img.style.backgroundImage = "url('" + chosen + "')";
+    img.style.transition = 'none';
+    img.style.display = 'flex';
+    img.style.opacity = '0';
+    void img.getBoundingClientRect();
+    await fade(img, 1, FADE_MS);
+
+    // Stage 3: hold on the full image + ring (1s)
+    await new Promise(r => setTimeout(r, HOLD_MS));
+
+    // Stage 4: fade back to black (0.5s)
+    await fade(img, 0, FADE_MS);
+    img.style.display = 'none';
+
+    // Stage 5: fade in the next screen, i.e. fade the black away (0.5s)
+    await fade(black, 0, FADE_MS);
+    black.style.display = 'none';
+  }
 }
 
 function fadeOutPreSplashVisuals() {
