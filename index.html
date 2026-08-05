@@ -112,10 +112,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    min-height: 100vh;
     padding: 0 24px 40px;
     background: #111; /* fallback if the background image fails to load */
-    position: relative;
     overflow: hidden;
   }
   .signin-card {
@@ -591,7 +589,7 @@
 <!-- MAIN STUDENT APP -->
 <div id="student-screen" class="screen">
   <div class="splash-header" style="position:sticky;top:0;z-index:10;background:#111;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:20px">
-    <button onclick="switchTab('splash')" style="background:none;border:none;padding:4px;cursor:pointer;color:rgba(255,255,255,0.5);display:flex;align-items:center;flex-shrink:0" aria-label="Back to overview">
+    <button onclick="playScreenTransition(() => switchTab('splash'))" style="background:none;border:none;padding:4px;cursor:pointer;color:rgba(255,255,255,0.5);display:flex;align-items:center;flex-shrink:0" aria-label="Back to overview">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 15l-5-5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <div class="logo-mark"><svg width="32" height="32" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
@@ -779,6 +777,17 @@
 
 <!-- LOADING OVERLAY -->
 <div id="loading-overlay" style="display:none;position:fixed;inset:0;background:transparent;z-index:999;align-items:center;justify-content:center;flex-direction:column">
+  <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" style="animation:spin 0.8s linear infinite">
+    <path d="M 30.30 6.12 A 22 22 0 0 1 49.88 25.70" fill="none" stroke="#fd9a1a" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 49.88 30.30 A 22 22 0 0 1 30.30 49.88" fill="none" stroke="#5deaff" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 25.70 49.88 A 22 22 0 0 1 6.12 30.30" fill="none" stroke="#f1369f" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 6.12 25.70 A 22 22 0 0 1 25.70 6.12" fill="none" stroke="#bdf452" stroke-width="5" stroke-linecap="round"/>
+  </svg>
+</div>
+
+<!-- YEAR <-> SPLASH SCREEN TRANSITION (normal navigation only — never during
+     orientation, unlock-reveal, or hero-zoom sequences) -->
+<div id="screen-transition-overlay" style="display:none;opacity:0;position:fixed;inset:0;z-index:998;background-size:cover;background-position:center;background-repeat:no-repeat;align-items:center;justify-content:center">
   <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" style="animation:spin 0.8s linear infinite">
     <path d="M 30.30 6.12 A 22 22 0 0 1 49.88 25.70" fill="none" stroke="#fd9a1a" stroke-width="5" stroke-linecap="round"/>
     <path d="M 49.88 30.30 A 22 22 0 0 1 30.30 49.88" fill="none" stroke="#5deaff" stroke-width="5" stroke-linecap="round"/>
@@ -1073,6 +1082,48 @@ function hideLoadingOverlay() {
 // so the background stays visible for the whole time the spinner is
 // spinning, then both dissolve before the splash screen actually appears
 // — rather than the previous instant cut between the two screens.
+// ── YEAR <-> SPLASH SCREEN TRANSITION ────────────────────────
+// A full-screen background image (randomly chosen) plus the same rotating
+// rainbow ring used on login, fading in, then out, around the moment a
+// normal navigation between the splash screen and a year screen happens.
+// Deliberately NOT used by orientation, the unlock-reveal, or the hero-zoom
+// sequence — those have their own dedicated visual treatments and should
+// never be interrupted by this.
+const SCREEN_TRANSITION_BACKGROUNDS = [
+  'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%2010.jpg',
+  'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%2011.jpg',
+  'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%2012.jpg',
+  'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%2013.jpg',
+  'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%2014.jpg',
+];
+
+function playScreenTransition(navigateFn) {
+  const el = document.getElementById('screen-transition-overlay');
+  if (!el) { navigateFn(); return; }
+
+  const FADE_MS = 300; // fade in 300ms, hold ~400ms while navigating, fade out 300ms — ~1s total
+  const chosen = SCREEN_TRANSITION_BACKGROUNDS[Math.floor(Math.random() * SCREEN_TRANSITION_BACKGROUNDS.length)];
+  el.style.backgroundImage = "url('" + chosen + "')";
+  el.style.transition = 'none';
+  el.style.display = 'flex';
+  el.style.opacity = '0';
+  void el.getBoundingClientRect(); // force reflow before animating away from this state
+
+  requestAnimationFrame(() => {
+    el.style.transition = 'opacity ' + FADE_MS + 'ms ease';
+    el.style.opacity = '1';
+  });
+
+  setTimeout(() => {
+    navigateFn(); // actual screen switch happens while fully covered
+    setTimeout(() => {
+      el.style.transition = 'opacity ' + FADE_MS + 'ms ease';
+      el.style.opacity = '0';
+      setTimeout(() => { el.style.display = 'none'; }, FADE_MS + 50);
+    }, 400);
+  }, FADE_MS);
+}
+
 function fadeOutPreSplashVisuals() {
   return new Promise(resolve => {
     const FADE_MS = 500;
@@ -1313,11 +1364,13 @@ function buildSplashTabs() {
       btn.innerHTML = y; // splash buttons show just the number — Year screen titles are unaffected
     }
     btn.onclick = () => {
-      currentYear = y;
-      applyYearColor(y);
-      switchTab('checklist');
-      renderChecklist();
-      updateProgress();
+      playScreenTransition(() => {
+        currentYear = y;
+        applyYearColor(y);
+        switchTab('checklist');
+        renderChecklist();
+        updateProgress();
+      });
     };
     container.appendChild(btn);
   });
