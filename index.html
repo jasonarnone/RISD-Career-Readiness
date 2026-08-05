@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 6:36 AM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 6:50 AM ET</p>
   </div>
 </div>
 
@@ -803,15 +803,9 @@
 </div>
 
 <!-- ORIENTATION SPOTLIGHT (first-login guided tour) -->
-<!-- Blocks ALL interaction with the underlying screen for the entire
-     orientation duration — the spotlight's own box-shadow only LOOKS
-     like it covers the screen; box-shadow doesn't participate in click
-     hit-testing, so without this, taps on anything outside the small
-     highlighted circle would pass straight through to the real screen. -->
-<div id="orientation-click-blocker" style="display:none;position:fixed;inset:0;z-index:599;background:transparent;pointer-events:auto"></div>
-<div id="orientation-spotlight" style="display:none;position:fixed;border-radius:50%;border:5px solid white;box-shadow:0 0 0 9999px rgba(253,154,26,0.80);z-index:600;pointer-events:auto;"></div>
+<div id="orientation-spotlight" style="display:none;position:fixed;border-radius:50%;border:5px solid white;box-shadow:0 0 0 9999px rgba(253,154,26,0.80);z-index:600;pointer-events:none;"></div>
 
-<div id="orientation-modal" style="display:none;position:fixed;inset:0;background:transparent;z-index:601;pointer-events:auto">
+<div id="orientation-modal" style="display:none;position:fixed;inset:0;background:transparent;z-index:601;pointer-events:none">
   <div id="orientation-modal-card" style="background:#1a1a1a;border-radius:20px;max-width:320px;width:calc(100% - 48px);position:absolute;left:50%;box-shadow:0 24px 60px rgba(0,0,0,0.6);pointer-events:auto">
     <button onclick="closeOrientationModal()" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">✕</button>
     <div style="padding:28px 24px 24px">
@@ -1261,7 +1255,7 @@ function switchTab(tab) {
 // even if some interruption skipped their normal close sequence.
 function hideAllOverlays() {
   ['loading-overlay', 'screen-transition-black', 'screen-transition-overlay',
-   'notice-modal', 'orientation-modal', 'orientation-click-blocker', 'idle-modal', 'orientation-spotlight'
+   'notice-modal', 'orientation-modal', 'idle-modal', 'orientation-spotlight'
   ].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -3065,8 +3059,6 @@ function maybeStartOrientation() {
   if (completedItems[ONBOARD_TASK_ID]) return; // first task already done — nothing to guide them through
 
   _orientationActive = true;
-  const blocker = document.getElementById('orientation-click-blocker');
-  if (blocker) blocker.style.display = 'block';
   _orientationStepIndex = 0;
 
   // The idle "What will you work on next?" prompt must never interrupt the
@@ -3084,19 +3076,6 @@ function maybeStartOrientation() {
   }
 
   runOrientationStep(0);
-
-  // Absolute last-resort safety net: no matter what goes wrong above —
-  // an exception the try/catches didn't anticipate, a step that never
-  // calls done(), anything — the screen can never be left blocked
-  // longer than this. A real 5-step tour finishes in well under 20s even
-  // with every hold and fade; 20s of no progress means something is
-  // stuck, not slow.
-  setTimeout(() => {
-    if (_orientationActive) {
-      console.warn('Orientation did not complete within 20s — force-ending to restore normal interaction.');
-      endOrientation();
-    }
-  }, 20000);
 }
 
 // ── Geometry helpers: real on-screen rects for each spotlight target ──
@@ -3311,31 +3290,14 @@ function runOrientationStep(i) {
   const step = ORIENTATION_STEPS[i];
 
   function positionAndShow() {
-    try {
-      const target = step.getTarget();
-      if (!target) { runOrientationStep(i + 1); return; } // target not found — skip this step safely
-      showOrientationHole(target, !!step.growReveal);
-      setTimeout(() => {
-        try {
-          showOrientationModal(step.title, step.desc, target, !!step.hideSkip);
-        } catch (e) {
-          console.warn('Orientation step ' + i + ' failed while showing modal — ending tour safely:', e);
-          endOrientation();
-        }
-      }, 500);
-    } catch (e) {
-      console.warn('Orientation step ' + i + ' failed — ending tour safely instead of leaving the screen blocked:', e);
-      endOrientation();
-    }
+    const target = step.getTarget();
+    if (!target) { runOrientationStep(i + 1); return; } // target not found — skip this step safely
+    showOrientationHole(target, !!step.growReveal);
+    setTimeout(() => { showOrientationModal(step.title, step.desc, target, !!step.hideSkip); }, 500);
   }
 
-  try {
-    if (step.beforeShow) step.beforeShow(positionAndShow);
-    else positionAndShow();
-  } catch (e) {
-    console.warn('Orientation step ' + i + ' beforeShow failed — ending tour safely:', e);
-    endOrientation();
-  }
+  if (step.beforeShow) step.beforeShow(positionAndShow);
+  else positionAndShow();
 }
 
 // Bound to the modal's ✕ button — advances to the next step
@@ -3352,8 +3314,6 @@ function skipOrientation() {
 function endOrientation() {
   hideOrientationModalOnly();
   hideOrientationHole();
-  const blocker = document.getElementById('orientation-click-blocker');
-  if (blocker) blocker.style.display = 'none';
   _orientationActive = false;
   resetIdleTimer(); // resume normal idle tracking from this point forward
 }
