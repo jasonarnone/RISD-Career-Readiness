@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 9:48 AM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 2:07 PM ET</p>
   </div>
 </div>
 
@@ -1245,25 +1245,39 @@ function switchTab(tab) {
       showStatusMessage(msg.text, msg.color);
     }
 
-    // If a year was just unlocked, reveal it now with a white-flash fade —
-    // consumed once, so it only plays on the first splash visit after
-    // unlocking, not on every subsequent visit.
+    // If a year was just unlocked, reveal it now — consumed once, so it
+    // only plays on the first splash visit after unlocking, not on every
+    // subsequent visit.
     const revealYear = window._pendingRevealYear;
     window._pendingRevealYear = null;
-    window._revealingYear = revealYear; // read by animateSplashRings to hold off on this ring
-
-    drawConcentricRings(); // internally starts animateSplashRings(), which skips revealYear's ring
-    buildSplashTabs();
 
     if (revealYear) {
-      dimOtherSplashElements(revealYear);
-      revealYearRing(revealYear);
-      revealYearButton(revealYear);
+      // Stage 0: show the splash screen in its OLD, still-locked state for
+      // half a second before anything changes — so the subject ring is
+      // still just a plain locked stroke, not yet the segmented ring.
+      window._forceLockedYear = revealYear;
+      drawConcentricRings();
+      buildSplashTabs();
+
       setTimeout(() => {
-        window._revealingYear = null;
-        animateSplashRings(); // restart cleanly now that the reveal has settled — includes the revealed ring
-        showStatusMessage(CHECKLIST[revealYear].label + ' TASKS UNLOCKED', YEAR_COLORS[revealYear].bg);
-      }, 3050); // 1s white hold + 2s fade + small buffer
+        window._forceLockedYear = null;
+        window._revealingYear = revealYear; // read by animateSplashRings to hold off on this ring
+
+        drawConcentricRings(); // now draws the TRUE unlocked/segmented ring
+        buildSplashTabs();
+
+        dimOtherSplashElements(revealYear);
+        revealYearRing(revealYear);
+        revealYearButton(revealYear);
+        setTimeout(() => {
+          window._revealingYear = null;
+          animateSplashRings(); // restart cleanly now that the reveal has settled — includes the revealed ring
+          showStatusMessage(CHECKLIST[revealYear].label + ' TASKS UNLOCKED', YEAR_COLORS[revealYear].bg);
+        }, 3050); // 1s white hold + 2s fade + small buffer
+      }, 500); // Stage 0: locked-appearance pause before the reveal begins
+    } else {
+      drawConcentricRings();
+      buildSplashTabs();
     }
   } else if (tab === 'checklist') {
   
@@ -1325,7 +1339,7 @@ function buildSplashTabs() {
     const done = all.filter(i => completedItems[i.id]).length;
     const btn = document.createElement('button');
     btn.className = 'splash-year-btn';
-    if (!isYearUnlocked(y)) {
+    if (!isYearUnlocked(y) || window._forceLockedYear === y) {
       // Locked: padlock silhouette instead of the label — transparent fill
       // (0% alpha over the black app background) so the year-color icon
       // has real contrast to stand out against, rather than matching the
@@ -1445,7 +1459,7 @@ function drawConcentricRings() {
     const yearGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     yearGroup.setAttribute('data-year', year);
 
-    if (!isYearUnlocked(year)) {
+    if (!isYearUnlocked(year) || window._forceLockedYear === year) {
       // Locked: a single simple outline ring — no segments, no animation
       const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       ring.setAttribute('cx', cx); ring.setAttribute('cy', cy);
@@ -3034,6 +3048,19 @@ function revealYearRing(year) {
 
   void g.getBoundingClientRect(); // force reflow before animating away from the flash state
 
+  // Quick punchy scale-pop, synchronized with the white flash: up 10% fast,
+  // then settle back down slower. Applied to the outer data-year group,
+  // which has no transform of its own (the rotation lives on the inner
+  // group one level deeper), so this can't clobber anything.
+  outerGroup.style.transformOrigin = '190px 190px';
+  outerGroup.style.transition = 'transform 0.1s ease-out';
+  outerGroup.style.transform = 'scale(1.1)';
+  setTimeout(() => {
+    outerGroup.style.transition = 'transform 0.5s ease-out';
+    outerGroup.style.transform = 'scale(1)';
+    setTimeout(() => { outerGroup.style.transition = ''; outerGroup.style.transform = ''; }, 550);
+  }, 100);
+
   // Hold solid white for a full second so the flash actually reads as a
   // moment, then fade to the true segment appearance over 2 seconds.
   setTimeout(() => {
@@ -3065,6 +3092,15 @@ function revealYearButton(year) {
   btn.style.color       = 'white';
 
   void btn.getBoundingClientRect(); // force reflow
+
+  // Same scale-pop as the ring, so both elements read as one unified reveal
+  btn.style.transformOrigin = 'center center';
+  btn.style.transition = 'transform 0.1s ease-out';
+  btn.style.transform = 'scale(1.1)';
+  setTimeout(() => {
+    btn.style.transition = 'transform 0.5s ease-out';
+    btn.style.transform = 'scale(1)';
+  }, 100);
 
   // Same 1-second white hold as the ring, so both elements read as one
   // unified reveal rather than two independently-timed effects.
