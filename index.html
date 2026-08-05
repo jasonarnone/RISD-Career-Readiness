@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 4, 2026 — 9:51 PM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 4, 2026 — 10:01 PM ET</p>
   </div>
 </div>
 
@@ -1152,9 +1152,6 @@ async function signInUser(email, name, picture, profile = {}) {
   currentUser = { email, name, picture };
   sessionStorage.setItem('risd_user', JSON.stringify(currentUser));
   isAdmin = CONFIG.ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email.toLowerCase());
-
-  document.getElementById('signin-screen').classList.remove('active');
-  // bottom nav removed
 
   // Use preloaded first name if available, fallback to email prefix
   const firstName = profile['First Name'] || (name ? name.split(' ')[0] : email.split('@')[0]);
