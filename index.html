@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 1:16 AM (server time)</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 4, 2026 — 9:35 PM ET</p>
   </div>
 </div>
 
@@ -590,7 +590,7 @@
 <!-- MAIN STUDENT APP -->
 <div id="student-screen" class="screen">
   <div class="splash-header" style="position:sticky;top:0;z-index:10;background:#111;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:20px">
-    <button onclick="playScreenTransition(() => switchTab('splash'))" style="background:none;border:none;padding:4px;cursor:pointer;color:rgba(255,255,255,0.5);display:flex;align-items:center;flex-shrink:0" aria-label="Back to overview">
+    <button onclick="switchTab('splash')" style="background:none;border:none;padding:4px;cursor:pointer;color:rgba(255,255,255,0.5);display:flex;align-items:center;flex-shrink:0" aria-label="Back to overview">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 15l-5-5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <div class="logo-mark"><svg width="32" height="32" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
@@ -824,7 +824,7 @@
 </div>
 
 <!-- IDLE TASK PROMPT -->
-<div id="idle-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:center;justify-content:center;padding:24px">
+<div id="idle-modal" style="display:none;opacity:0;position:fixed;inset:0;background:transparent;z-index:1000;align-items:center;justify-content:center;padding:24px">
   <div style="background:#1a1a1a;border-radius:20px;max-width:340px;width:100%;position:relative;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.6)">
 
     <!-- Close button -->
@@ -1099,64 +1099,13 @@ const SCREEN_TRANSITION_BACKGROUNDS = [
   'https://careercenter.risd.edu/sites/default/files/temp/CareerReadybgArtboard%2014.jpg',
 ];
 
-function playScreenTransition(navigateFn) {
-  const black = document.getElementById('screen-transition-black');
-  const img = document.getElementById('screen-transition-overlay');
-  if (!black || !img) { navigateFn(); return; }
-
-  const FADE_MS = 500;
-  const HOLD_MS = 1000;
-  const chosen = SCREEN_TRANSITION_BACKGROUNDS[Math.floor(Math.random() * SCREEN_TRANSITION_BACKGROUNDS.length)];
-
-  // Preload the chosen image BEFORE starting anything visual. Without
-  // this, the fade-in could complete before the image has actually
-  // finished downloading over the network — showing a blank/inconsistent
-  // result depending on connection speed, which is exactly what caused
-  // the glitchy, barely-visible behavior.
-  const preload = new Image();
-  preload.onload = startSequence;
-  preload.onerror = startSequence; // don't get stuck waiting if it fails to load at all
-  preload.src = chosen;
-
-  function fade(el, toOpacity, ms) {
-    return new Promise(resolve => {
-      el.style.transition = 'opacity ' + ms + 'ms ease';
-      el.style.opacity = String(toOpacity);
-      setTimeout(resolve, ms);
-    });
-  }
-
-  async function startSequence() {
-    // Stage 1: fade the CURRENT screen to black (0.5s)
-    black.style.transition = 'none';
-    black.style.display = 'block';
-    black.style.opacity = '0';
-    void black.getBoundingClientRect(); // force reflow before animating
-    await fade(black, 1, FADE_MS);
-
-    // Fully black now — do the actual navigation, completely hidden
-    navigateFn();
-
-    // Stage 2: fade IN the full-screen image + rotating ring (0.5s).
-    // Image is already preloaded, so this can't show blank/incomplete.
-    img.style.backgroundImage = "url('" + chosen + "')";
-    img.style.transition = 'none';
-    img.style.display = 'flex';
-    img.style.opacity = '0';
-    void img.getBoundingClientRect();
-    await fade(img, 1, FADE_MS);
-
-    // Stage 3: hold on the full image + ring (1s)
-    await new Promise(r => setTimeout(r, HOLD_MS));
-
-    // Stage 4: fade back to black (0.5s)
-    await fade(img, 0, FADE_MS);
-    img.style.display = 'none';
-
-    // Stage 5: fade in the next screen, i.e. fade the black away (0.5s)
-    await fade(black, 0, FADE_MS);
-    black.style.display = 'none';
-  }
+// Shared fade helper used by the idle-prompt backdrop sequence below.
+function fadeEl(el, toOpacity, ms) {
+  return new Promise(resolve => {
+    el.style.transition = 'opacity ' + ms + 'ms ease';
+    el.style.opacity = String(toOpacity);
+    setTimeout(resolve, ms);
+  });
 }
 
 function fadeOutPreSplashVisuals() {
@@ -1399,13 +1348,11 @@ function buildSplashTabs() {
       btn.innerHTML = y; // splash buttons show just the number — Year screen titles are unaffected
     }
     btn.onclick = () => {
-      playScreenTransition(() => {
-        currentYear = y;
-        applyYearColor(y);
-        switchTab('checklist');
-        renderChecklist();
-        updateProgress();
-      });
+      currentYear = y;
+      applyYearColor(y);
+      switchTab('checklist');
+      renderChecklist();
+      updateProgress();
     };
     container.appendChild(btn);
   });
@@ -3410,13 +3357,62 @@ function showIdlePrompt() {
   document.getElementById('idle-task-title').textContent = pick.item.title;
   document.getElementById('idle-task-desc').textContent  = pick.item.desc;
 
-  // Show
+  // Show — the full-screen image + rotating ring plays as a backdrop
+  // reveal before the popup card fades in on top of it, rather than the
+  // old plain dark tint appearing instantly.
+  const black = document.getElementById('screen-transition-black');
+  const img   = document.getElementById('screen-transition-overlay');
   const modal = document.getElementById('idle-modal');
-  modal.style.display = 'flex';
+  const FADE_MS = 500;
+  const HOLD_MS = 1000;
+  const chosen = SCREEN_TRANSITION_BACKGROUNDS[Math.floor(Math.random() * SCREEN_TRANSITION_BACKGROUNDS.length)];
+
+  // Preload before starting anything visual — without this, the fade-in
+  // can complete before the image has actually finished downloading,
+  // showing a blank/inconsistent result depending on connection speed.
+  const preload = new Image();
+  preload.onload = startBackdropSequence;
+  preload.onerror = startBackdropSequence; // don't hang forever if it fails to load
+  preload.src = chosen;
+
+  async function startBackdropSequence() {
+    black.style.transition = 'none';
+    black.style.display = 'block';
+    black.style.opacity = '0';
+    void black.getBoundingClientRect();
+    await fadeEl(black, 1, FADE_MS);
+
+    img.style.backgroundImage = "url('" + chosen + "')";
+    img.style.transition = 'none';
+    img.style.display = 'flex';
+    img.style.opacity = '0';
+    void img.getBoundingClientRect();
+    await fadeEl(img, 1, FADE_MS);
+
+    await new Promise(r => setTimeout(r, HOLD_MS));
+
+    // Backdrop stays fully visible — the popup card fades in on top of it
+    modal.style.transition = 'none';
+    modal.style.display = 'flex';
+    modal.style.opacity = '0';
+    void modal.getBoundingClientRect();
+    await fadeEl(modal, 1, 400);
+  }
 }
 
-function closeIdleModal() {
-  document.getElementById('idle-modal').style.display = 'none';
+async function closeIdleModal() {
+  const black = document.getElementById('screen-transition-black');
+  const img   = document.getElementById('screen-transition-overlay');
+  const modal = document.getElementById('idle-modal');
+  const FADE_MS = 400;
+
+  await fadeEl(modal, 0, FADE_MS);
+  modal.style.display = 'none';
+  await fadeEl(img, 0, FADE_MS);
+  img.style.display = 'none';
+  await fadeEl(black, 0, FADE_MS);
+  black.style.display = 'none';
+
   _idleTask = null;
   _idleYear = null;
   resetIdleTimer();
