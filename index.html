@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 9:24 AM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 9:36 AM ET</p>
   </div>
 </div>
 
@@ -1966,15 +1966,22 @@ function updateProgress(justCompletedId) {
   animateYearRing();
 
   // Quick punchy "pop" on the whole ring when a task was just completed:
-  // scale up 10% fast, then settle back down slower.
+  // scale up 10% fast, then settle back down slower. Combined with the
+  // base -90deg rotation (from .progress-ring-wrap svg in CSS) rather
+  // than overwriting it — setting style.transform to just "scale(...)"
+  // would otherwise silently wipe out that rotation, since inline styles
+  // replace the whole transform value rather than adding to it.
   if (justCompletedId) {
     svg.style.transformOrigin = '50% 50%';
     svg.style.transition = 'transform 0.1s ease-out';
-    svg.style.transform = 'scale(1.1)';
+    svg.style.transform = 'rotate(-90deg) scale(1.1)';
     setTimeout(() => {
       svg.style.transition = 'transform 0.5s ease-out';
-      svg.style.transform = 'scale(1)';
-      setTimeout(() => { svg.style.transition = ''; }, 550);
+      svg.style.transform = 'rotate(-90deg) scale(1)';
+      setTimeout(() => {
+        svg.style.transition = '';
+        svg.style.transform = ''; // let the base CSS rule take back over cleanly
+      }, 550);
     }, 100);
   }
 }
