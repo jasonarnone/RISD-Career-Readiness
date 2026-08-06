@@ -503,6 +503,20 @@
   }
 
   /* ── SETUP SCREEN ── */
+  /* Orientation click-lock: disables interaction with everything on screen
+     except elements explicitly marked .orientation-interactive (the tour's
+     own X button and Skip link). This is a single CSS toggle on <body>,
+     not a separate overlay element with its own independent lifecycle —
+     that distinction matters: a previous attempt used a standalone
+     full-screen blocker div that could end up stuck active if anything
+     in its own show/hide logic failed. This version can't have that
+     failure mode, because it's tied directly to the tour's modal
+     showing/hiding (see showOrientationModal/hideOrientationModalOnly),
+     which has been reliable throughout this whole project. */
+  body.orientation-lock * { pointer-events: none !important; }
+  body.orientation-lock .orientation-interactive,
+  body.orientation-lock .orientation-interactive * { pointer-events: auto !important; }
+
   @keyframes spin {
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
@@ -538,7 +552,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 10:07 PM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 6, 2026 — 6:45 AM ET</p>
   </div>
 </div>
 
@@ -817,11 +831,11 @@
 
 <div id="orientation-modal" style="display:none;position:fixed;inset:0;background:transparent;z-index:601;pointer-events:none">
   <div id="orientation-modal-card" style="background:#1a1a1a;border-radius:20px;max-width:320px;width:calc(100% - 48px);position:absolute;left:50%;box-shadow:0 24px 60px rgba(0,0,0,0.6);pointer-events:auto">
-    <button onclick="closeOrientationModal()" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">✕</button>
+    <button class="orientation-interactive" onclick="closeOrientationModal()" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">✕</button>
     <div style="padding:28px 24px 24px">
       <div id="orientation-title" style="font-size:17px;font-weight:600;font-family:Georgia,serif;color:white;line-height:1.4;margin-bottom:10px"></div>
       <div id="orientation-desc" style="font-size:13px;font-family:Georgia,serif;color:rgba(255,255,255,0.7);line-height:1.6"></div>
-      <button id="orientation-skip-btn" onclick="skipOrientation()" style="margin-top:16px;background:none;border:none;color:rgba(255,255,255,0.5);font-size:12px;font-family:Georgia,serif;text-decoration:underline;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent">Skip this tutorial</button>
+      <button id="orientation-skip-btn" class="orientation-interactive" onclick="skipOrientation()" style="margin-top:16px;background:none;border:none;color:rgba(255,255,255,0.5);font-size:12px;font-family:Georgia,serif;text-decoration:underline;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent">Skip this tutorial</button>
     </div>
   </div>
 </div>
@@ -1299,6 +1313,12 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const screen = document.getElementById(id);
   screen.classList.add('active');
+  // Redundant safety net: a screen switch should never leave the
+  // orientation click-lock active, regardless of how it got there. This
+  // is a belt-and-suspenders backup to the primary release mechanism
+  // (tied to the orientation modal's own hide), not the only thing
+  // preventing a stuck lock.
+  document.body.classList.remove('orientation-lock');
   // Always scroll the newly shown screen to top
   screen.scrollTop = 0;
   window.scrollTo(0, 0);
@@ -3144,7 +3164,49 @@ function startOrientationCore() {
   }
 
   runOrientationStep(0);
+
+  // Last-resort watchdog. Deliberately NOT a fixed "end the tour after N
+  // seconds" timer — a student reading each step carefully could easily
+  // exceed any such limit, and cutting their tour short mid-read would be
+  // its own bug. Instead this repeatedly checks for the one state that is
+  // actually broken: the click-lock active while the tour's modal (which
+  // carries the X and Skip escape hatches) is NOT on screen. That is the
+  // only way the app can be left unresponsive with no way out.
+  clearInterval(window._orientationWatchdog);
+  window._orientationWatchdog = setInterval(() => {
+    if (!_orientationActive) { clearInterval(window._orientationWatchdog); return; }
+    releaseOrientationLockIfOrphaned();
+  }, 2000);
 }
+
+// ── SELF-HEALING LOCK RELEASE (the bulletproof guarantee) ────
+// The click-lock is only ever legitimate while the tour's modal is
+// actually visible, because that modal carries the two escape hatches
+// (X and "Skip this tutorial"). Lock active + modal not visible = the app
+// is unresponsive with no way out, which is exactly the failure mode that
+// bit us before. This makes that state impossible to persist.
+//
+// Two independent triggers, so it doesn't depend on any single mechanism:
+//   1. The user's very next tap (below) — instant recovery.
+//   2. The interval watchdog in startOrientationCore — recovers even if
+//      the student never taps anything.
+function releaseOrientationLockIfOrphaned() {
+  if (!document.body.classList.contains('orientation-lock')) return false;
+  const modal = document.getElementById('orientation-modal');
+  // getComputedStyle rather than inline .style so this is correct no
+  // matter how the modal was shown or hidden.
+  const modalVisible = modal && window.getComputedStyle(modal).display !== 'none';
+  if (modalVisible) return false;
+  console.warn('Orientation click-lock was active without its modal visible — releasing to restore interaction.');
+  endOrientation();
+  return true;
+}
+
+// Capture phase on document. This still fires while the lock is active:
+// the lock sets pointer-events:none on body's DESCENDANTS, so a blocked
+// tap lands on <body> itself and propagates to document.
+document.addEventListener('click', releaseOrientationLockIfOrphaned, true);
+document.addEventListener('touchend', releaseOrientationLockIfOrphaned, true);
 
 function maybeStartOrientation() {
   if (!ENABLE_FIRST_LOGIN_ORIENTATION) return;
@@ -3287,6 +3349,10 @@ function showOrientationModal(title, desc, holeRect, hideSkip) {
   const skipBtn = document.getElementById('orientation-skip-btn');
   if (skipBtn) skipBtn.style.display = hideSkip ? 'none' : '';
   modal.style.display = 'block';
+  // Engage the click-lock only AFTER the modal is genuinely visible, so
+  // there is never a moment where the screen is locked without the X and
+  // Skip escape hatches actually on screen.
+  document.body.classList.add('orientation-lock');
 
   card.style.transform = 'translateX(-50%)';
   card.style.bottom = '';
@@ -3318,6 +3384,7 @@ function showOrientationModal(title, desc, holeRect, hideSkip) {
 function hideOrientationModalOnly() {
   const modal = document.getElementById('orientation-modal');
   if (modal) modal.style.display = 'none';
+  document.body.classList.remove('orientation-lock');
 }
 
 // ── The five orientation steps ──
@@ -3340,7 +3407,7 @@ const ORIENTATION_STEPS = [
       return orientationElementHole(btn, 10);
     },
     title: 'This is the Year 1 button.',
-    desc: "Press this button to begin your Career Ready tasks!",
+    desc: "Access your first set of career tasks to begin your journey!",
   },
   {
     beforeShow: (done) => {
@@ -3358,7 +3425,7 @@ const ORIENTATION_STEPS = [
       return orientationCheckboxHole(firstItem.id);
     },
     title: 'This is your first task.',
-    desc: "You completed your first task by using this app. Check off the task now!",
+    desc: "Complete your tasks to track your progress!",
   },
   {
     beforeShow: (done) => {
@@ -3368,7 +3435,7 @@ const ORIENTATION_STEPS = [
       setTimeout(done, 500);
     },
     getTarget: () => orientationYearRingSegmentHole(0),
-    title: 'You completed your first task.',
+    title: "Here's your first completed task.",
     desc: 'Check off more tasks to fill in your Year 1 ring!',
     hideSkip: true, // tour is effectively done at this point — skipping no longer makes sense
   },
@@ -3379,14 +3446,31 @@ function runOrientationStep(i) {
   const step = ORIENTATION_STEPS[i];
 
   function positionAndShow() {
-    const target = step.getTarget();
-    if (!target) { runOrientationStep(i + 1); return; } // target not found — skip this step safely
-    showOrientationHole(target, !!step.growReveal);
-    setTimeout(() => { showOrientationModal(step.title, step.desc, target, !!step.hideSkip); }, 500);
+    try {
+      const target = step.getTarget();
+      if (!target) { runOrientationStep(i + 1); return; } // target not found — skip this step safely
+      showOrientationHole(target, !!step.growReveal);
+      setTimeout(() => {
+        try {
+          showOrientationModal(step.title, step.desc, target, !!step.hideSkip);
+        } catch (e) {
+          console.warn('Orientation step ' + i + ' failed while showing modal — ending tour safely:', e);
+          endOrientation();
+        }
+      }, 500);
+    } catch (e) {
+      console.warn('Orientation step ' + i + ' failed — ending tour safely instead of leaving the screen locked:', e);
+      endOrientation();
+    }
   }
 
-  if (step.beforeShow) step.beforeShow(positionAndShow);
-  else positionAndShow();
+  try {
+    if (step.beforeShow) step.beforeShow(positionAndShow);
+    else positionAndShow();
+  } catch (e) {
+    console.warn('Orientation step ' + i + ' beforeShow failed — ending tour safely:', e);
+    endOrientation();
+  }
 }
 
 // Bound to the modal's ✕ button — advances to the next step
@@ -3401,8 +3485,10 @@ function skipOrientation() {
 }
 
 function endOrientation() {
+  clearInterval(window._orientationWatchdog);
   hideOrientationModalOnly();
   hideOrientationHole();
+  document.body.classList.remove('orientation-lock'); // explicit, even though hideOrientationModalOnly already does this
   _orientationActive = false;
   resetIdleTimer(); // resume normal idle tracking from this point forward
 }
