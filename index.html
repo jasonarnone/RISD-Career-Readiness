@@ -538,7 +538,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 2:45 PM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 5, 2026 — 10:07 PM ET</p>
   </div>
 </div>
 
@@ -565,7 +565,12 @@
       <div class="splash-student-name" id="splash-name">Career Ready</div>
       <div class="splash-student-sub" id="splash-sub">RISD Career Center</div>
     </div>
-    <div class="splash-avatar" id="splash-avatar" onclick="showSignoutModal()">?</div>
+    <div class="splash-avatar" id="splash-avatar" onclick="showSignoutModal()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 17.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.8"/>
+      </svg>
+    </div>
   </div>
   <div class="splash-ring-wrap">
     <svg id="splash-ring-svg" viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg"></svg>
@@ -612,7 +617,12 @@
       <div class="splash-student-name" id="student-greeting" style="font-size:15px">Welcome</div>
       <div class="splash-student-sub" id="student-year-label">RISD Career Center</div>
     </div>
-    <div class="splash-avatar" id="user-avatar" onclick="showSignoutModal()">?</div>
+    <div class="splash-avatar" id="user-avatar" onclick="showSignoutModal()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M19.4 13a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 17.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.8"/>
+      </svg>
+    </div>
   </div>
 
   <div class="progress-overview">
@@ -843,6 +853,7 @@
       <a href="mailto:risdcareers@risd.edu?cc=jarnone@risd.edu&subject=Support%3A%20RISD%20Career%20Readiness%20Tracker"
          class="btn btn-ghost" style="text-decoration:none;display:flex;align-items:center;justify-content:center">Help / Feedback</a>
       <button id="save-home-screen-btn" class="btn btn-ghost" onclick="saveToHomeScreen()" style="display:none">Save to Home Screen</button>
+      <button class="btn btn-ghost" onclick="startTutorialManually()">Tutorial</button>
       <button class="btn btn-ghost" onclick="hardRefreshApp()">Refresh app</button>
       <button class="btn btn-ghost" onclick="signOut()">Sign out</button>
       <button class="btn btn-primary" onclick="closeModal('signout-modal')">Stay signed in</button>
@@ -1184,11 +1195,6 @@ async function signInUser(email, name, picture, profile = {}) {
 
   // Use preloaded first name if available, fallback to email prefix
   const firstName = profile['First Name'] || (name ? name.split(' ')[0] : email.split('@')[0]);
-  const initials = [profile['First Name'], profile['Last Name']]
-    .filter(Boolean).map(n => n[0]).join('').toUpperCase()
-    || (name || email).split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase();
-
-  document.getElementById('user-avatar').textContent = initials;
   const fullDisplayName = [profile['First Name'], profile['Last Name']].filter(Boolean).join(' ') || firstName;
   document.getElementById('student-greeting').textContent = 'Welcome, ' + fullDisplayName;
 
@@ -1320,13 +1326,8 @@ function updateSplashProfile(profile) {
   const lastName  = profile['Last Name']  || '';
   const fullName  = [firstName, lastName].filter(Boolean).join(' ') || profile['Email'] || 'Student';
   const gradYear  = profile['Grad Year'] ? 'Class of ' + profile['Grad Year'] : '';
-  const initials  = [firstName, lastName].filter(Boolean).map(n => n[0]).join('').toUpperCase()
-                    || fullName.slice(0,2).toUpperCase();
-
   document.getElementById('splash-name').textContent    = fullName;
   document.getElementById('splash-sub').textContent     = gradYear || 'RISD Career Center';
-  document.getElementById('splash-avatar').textContent  = initials;
-  document.getElementById('user-avatar').textContent    = initials;
 }
 
 function buildSplashTabs() {
@@ -2260,10 +2261,6 @@ async function loadProgress(email) {
     if (data && data.profile && Object.keys(data.profile).length) {
       const p = data.profile;
       const firstName = p['First Name'] || email.split('@')[0];
-      const initials = [p['First Name'], p['Last Name']]
-        .filter(Boolean).map(n => n[0]).join('').toUpperCase()
-        || firstName.slice(0,2).toUpperCase();
-      document.getElementById('user-avatar').textContent    = initials;
       const fullName = [p['First Name'], p['Last Name']].filter(Boolean).join(' ') || firstName;
       window._studentGradYear = p['Grad Year'] || '';
       const greetEl = document.getElementById('student-greeting');
@@ -3128,10 +3125,7 @@ let _orientationActive = false; // true for the whole tour — suppresses the id
 // loads. Re-triggers on every login until the first real task is done —
 // whether that happens by completing the tour (which auto-checks it in
 // step 5) or by the student completing it themselves without the tour.
-function maybeStartOrientation() {
-  if (!ENABLE_FIRST_LOGIN_ORIENTATION) return;
-  if (completedItems[ONBOARD_TASK_ID]) return; // first task already done — nothing to guide them through
-
+function startOrientationCore() {
   _orientationActive = true;
   _orientationStepIndex = 0;
 
@@ -3150,6 +3144,27 @@ function maybeStartOrientation() {
   }
 
   runOrientationStep(0);
+}
+
+function maybeStartOrientation() {
+  if (!ENABLE_FIRST_LOGIN_ORIENTATION) return;
+  if (completedItems[ONBOARD_TASK_ID]) return; // first task already done — nothing to guide them through
+  startOrientationCore();
+}
+
+// Manually re-launch the tour on demand — e.g. from the "Tutorial" button
+// in the Account popup, for a returning student who wants to get
+// reacquainted after time away. Deliberately bypasses the "first task
+// already done" guard above, which only makes sense for the automatic
+// first-login case.
+function startTutorialManually() {
+  if (!ENABLE_FIRST_LOGIN_ORIENTATION) { toast('Tutorial is currently unavailable.'); return; }
+  closeModal('signout-modal');
+  switchTab('splash');
+  // Small delay so the splash screen has genuinely finished laying out
+  // before orientation's first step tries to measure it — the button may
+  // be tapped from a completely different screen.
+  setTimeout(startOrientationCore, 100);
 }
 
 // ── Geometry helpers: real on-screen rects for each spotlight target ──
