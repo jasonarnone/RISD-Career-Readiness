@@ -552,7 +552,7 @@
       </button>
     </div>
     <p class="signin-note">Only your email is stored to track your progress.</p>
-    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 6, 2026 — 6:45 AM ET</p>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:16px;font-family:Georgia,serif">Build: Aug 6, 2026 — 7:30 AM ET</p>
   </div>
 </div>
 
@@ -831,10 +831,15 @@
 
 <div id="orientation-modal" style="display:none;position:fixed;inset:0;background:transparent;z-index:601;pointer-events:none">
   <div id="orientation-modal-card" style="background:#1a1a1a;border-radius:20px;max-width:320px;width:calc(100% - 48px);position:absolute;left:50%;box-shadow:0 24px 60px rgba(0,0,0,0.6);pointer-events:auto">
-    <button class="orientation-interactive" onclick="closeOrientationModal()" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">✕</button>
+    <button class="orientation-interactive" onclick="closeOrientationModal()" aria-label="Next" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
     <div style="padding:28px 24px 24px">
       <div id="orientation-title" style="font-size:17px;font-weight:600;font-family:Georgia,serif;color:white;line-height:1.4;margin-bottom:10px"></div>
       <div id="orientation-desc" style="font-size:13px;font-family:Georgia,serif;color:rgba(255,255,255,0.7);line-height:1.6"></div>
+      <div id="orientation-page-num" style="font-size:12px;font-family:Georgia,serif;color:rgba(255,255,255,0.45);margin-top:10px"></div>
       <button id="orientation-skip-btn" class="orientation-interactive" onclick="skipOrientation()" style="margin-top:16px;background:none;border:none;color:rgba(255,255,255,0.5);font-size:12px;font-family:Georgia,serif;text-decoration:underline;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent">Skip this tutorial</button>
     </div>
   </div>
@@ -868,10 +873,10 @@
          class="btn btn-ghost" style="text-decoration:none;display:flex;align-items:center;justify-content:center">Help / Feedback</a>
       <button id="save-home-screen-btn" class="btn btn-ghost" onclick="saveToHomeScreen()" style="display:none">Save to Home Screen</button>
       <button class="btn btn-ghost" onclick="startTutorialManually()">Tutorial</button>
-      <button class="btn btn-ghost" onclick="hardRefreshApp()">Refresh app</button>
       <button class="btn btn-ghost" onclick="signOut()">Sign out</button>
       <button class="btn btn-primary" onclick="closeModal('signout-modal')">Stay signed in</button>
     </div>
+    <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:18px;text-align:center;font-family:Georgia,serif">Build: Aug 6, 2026 — 7:30 AM ET</p>
   </div>
 </div>
 
@@ -3340,12 +3345,16 @@ function hideOrientationHole() {
   if (hole) { hole.style.transition = ''; hole.style.display = 'none'; }
 }
 
-function showOrientationModal(title, desc, holeRect, hideSkip) {
+function showOrientationModal(title, desc, holeRect, hideSkip, stepNum) {
   const modal = document.getElementById('orientation-modal');
   const card = document.getElementById('orientation-modal-card');
   if (!modal || !card) return;
   document.getElementById('orientation-title').textContent = title;
   document.getElementById('orientation-desc').textContent = desc;
+  const pageEl = document.getElementById('orientation-page-num');
+  // Total comes from the real step list, not a hardcoded 5, so it stays
+  // correct automatically if steps are ever added or removed.
+  if (pageEl) pageEl.textContent = stepNum ? (stepNum + '/' + ORIENTATION_STEPS.length) : '';
   const skipBtn = document.getElementById('orientation-skip-btn');
   if (skipBtn) skipBtn.style.display = hideSkip ? 'none' : '';
   modal.style.display = 'block';
@@ -3452,7 +3461,7 @@ function runOrientationStep(i) {
       showOrientationHole(target, !!step.growReveal);
       setTimeout(() => {
         try {
-          showOrientationModal(step.title, step.desc, target, !!step.hideSkip);
+          showOrientationModal(step.title, step.desc, target, !!step.hideSkip, i + 1);
         } catch (e) {
           console.warn('Orientation step ' + i + ' failed while showing modal — ending tour safely:', e);
           endOrientation();
@@ -3473,7 +3482,7 @@ function runOrientationStep(i) {
   }
 }
 
-// Bound to the modal's ✕ button — advances to the next step
+// Bound to the modal's next-arrow button — advances to the next step
 function closeOrientationModal() {
   hideOrientationModalOnly();
   _orientationStepIndex++;
